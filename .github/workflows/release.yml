@@ -12,17 +12,36 @@ jobs:
     strategy:
       matrix:
         include:
+          # Windows
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact: binpeek.exe
+            artifact: binpeek-windows-x64.exe
 
+          - os: windows-latest
+            target: i686-pc-windows-msvc
+            artifact: binpeek-windows-x86.exe
+
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            artifact: binpeek-windows-arm64.exe
+
+          # Linux
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact: binpeek-linux
+            artifact: binpeek-linux-x64
 
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            artifact: binpeek-linux-arm64
+
+          # macOS
           - os: macos-latest
             target: x86_64-apple-darwin
-            artifact: binpeek-macos
+            artifact: binpeek-macos-x64
+
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: binpeek-macos-arm64
 
     steps:
       - uses: actions/checkout@v4
@@ -32,8 +51,16 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Install cross-compiler (Linux ARM64)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
 
       - name: Rename artifact (Unix)
         if: matrix.os != 'windows-latest'
@@ -68,7 +95,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/binpeek.exe/binpeek.exe
-            artifacts/binpeek-linux/binpeek-linux
-            artifacts/binpeek-macos/binpeek-macos
+            artifacts/binpeek-windows-x64.exe/binpeek-windows-x64.exe
+            artifacts/binpeek-windows-x86.exe/binpeek-windows-x86.exe
+            artifacts/binpeek-windows-arm64.exe/binpeek-windows-arm64.exe
+            artifacts/binpeek-linux-x64/binpeek-linux-x64
+            artifacts/binpeek-linux-arm64/binpeek-linux-arm64
+            artifacts/binpeek-macos-x64/binpeek-macos-x64
+            artifacts/binpeek-macos-arm64/binpeek-macos-arm64
           generate_release_notes: true
