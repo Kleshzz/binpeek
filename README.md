@@ -1,20 +1,41 @@
-# Binpeek
+# binpeek 🔍
 
 A fast, terminal-based binary file inspector with a TUI interface.
 
-Supports **PE** (Windows `.exe` / `.dll`), **ELF** (Linux), and **Mach-O** (macOS) formats.
+Supports **PE** (Windows `.exe` / `.dll`), **ELF** (Linux), **Mach-O** (macOS) and [40+ other formats](#supported-formats).
 
 ![binpeek demo](https://raw.githubusercontent.com/Kleshzz/binpeek/main/assets/demo.png)
 
 ## Features
 
-- **Overview** — file size, format detection, entropy analysis
-- **Sections** — virtual addresses, sizes, entry point, image base
-- **Imports** — imported DLLs and functions (PE) / libraries and symbols (ELF)
-- **Strings** — extracted printable strings from the binary
-- Fast and lightweight — no runtime dependencies, single binary
+- 📋 **Overview** — file size, format detection, entropy, language, packer and obfuscator detection
+- 🗂 **Sections** — virtual addresses, sizes, entry point, image base
+- 📦 **Imports** — imported DLLs and functions (PE) / libraries and symbols (ELF)
+- 🔤 **Strings** — extracted printable ASCII strings (min. 5 chars, up to 10 000)
+- 🔬 **Disasm** — disassembly of the `.text` section via Capstone (x86/x64)
+- ⚡ Fast and lightweight — single binary, no runtime dependencies
 
 ## Installation
+
+### Download binary (recommended)
+
+Grab the latest release for your platform from the [Releases](https://github.com/Kleshzz/binpeek/releases) page:
+
+| Platform | File |
+|----------|------|
+| Windows x64 | `binpeek-windows-x64.exe` |
+| Windows x86 | `binpeek-windows-x86.exe` |
+| Windows ARM64 | `binpeek-windows-arm64.exe` |
+| Linux x64 | `binpeek-linux-x64` |
+| Linux ARM64 | `binpeek-linux-arm64` |
+| macOS Intel | `binpeek-macos-x64` |
+| macOS Apple Silicon | `binpeek-macos-arm64` |
+
+### Via cargo
+
+```bash
+cargo install binpeek
+```
 
 ### From source
 
@@ -26,12 +47,6 @@ cargo build --release
 
 Binary will be at `target/release/binpeek` (or `binpeek.exe` on Windows).
 
-### Via cargo
-
-```bash
-cargo install binpeek
-```
-
 ## Usage
 
 ```bash
@@ -42,33 +57,53 @@ binpeek <file>
 
 ```bash
 # Inspect a Windows executable
-binpeek notepad.exe
+binpeek C:\Windows\System32\notepad.exe
+
+# Inspect a DLL
+binpeek C:\Windows\System32\kernel32.dll
 
 # Inspect a Linux binary
 binpeek /usr/bin/ls
 
-# Inspect a DLL
-binpeek kernel32.dll
+# Inspect any file — images, archives, documents
+binpeek suspicious.pdf
+binpeek archive.zip
 ```
+
+> **Tip:** If a file is packed with UPX, binpeek will detect it and suggest unpacking first:
+> ```
+> Packer: UPX ⚠ unpack first: upx -d <file>
+> ```
 
 ## Controls
 
 | Key | Action |
 |-----|--------|
-| `1` `2` `3` `4` | Switch tabs |
-| `↑` `↓` | Scroll line |
-| `PgUp` `PgDn` | Scroll page |
+| `1` `2` `3` `4` `5` | Switch tabs |
+| `↑` `↓` | Scroll one line |
+| `PgUp` `PgDn` | Scroll one page |
 | `Home` | Scroll to top |
 | `q` | Quit |
 
 ## Tabs
 
-| Tab | Description |
-|-----|-------------|
-| **Overview** | File info, format, entropy |
-| **Sections** | Binary sections with addresses and sizes |
-| **Imports** | Imported libraries and functions |
-| **Strings** | Extracted ASCII strings (min. 5 chars) |
+| # | Tab | Description |
+|---|-----|-------------|
+| 1 | **Overview** | File info, format, entropy, language, packer, obfuscator |
+| 2 | **Sections** | Binary sections with virtual addresses and sizes |
+| 3 | **Imports** | Imported libraries and functions |
+| 4 | **Strings** | Extracted ASCII strings |
+| 5 | **Disasm** | Disassembly of `.text` section (x86/x64) |
+
+## Language & packer detection
+
+binpeek automatically detects:
+
+**Languages:** Go, Go (obfuscated), Rust, .NET / C#, Python, Python (PyInstaller), Delphi, AutoIt, Visual Basic 6, C++ (MSVC / GCC / Clang)
+
+**Packers:** UPX, MPRESS, NSPack, PECompact, ASPack, FSG, Themida, VMProtect
+
+**Obfuscators:** Garble (Go), ConfuserEx, .NET Reactor, Eazfuscator, SmartAssembly, Dotfuscator, Enigma Protector, Obsidium
 
 ## Entropy guide
 
@@ -81,11 +116,19 @@ binpeek kernel32.dll
 
 ## Supported formats
 
-| Format | Platform | Sections | Imports |
-|--------|----------|----------|---------|
-| PE (`.exe`, `.dll`) | Windows | ✅ | ✅ |
-| ELF | Linux / Unix | ✅ | ✅ |
-| Mach-O | macOS | 🔜 | 🔜 |
+**Executables:** PE (.exe, .dll), ELF, Mach-O, Java .class, WebAssembly
+
+**Archives:** ZIP / JAR / APK, RAR, GZIP, BZIP2, XZ, 7-Zip, TAR
+
+**Images:** JPEG, PNG, GIF, BMP, TIFF, WebP
+
+**Documents:** PDF, RTF, MS Office (DOC/XLS/PPT)
+
+**Audio:** MP3, OGG, FLAC, WAV
+
+**Video:** MP4 / MOV
+
+**System:** Windows Shortcut (.lnk), Cabinet (.cab), Registry Hive, Minidump, SQLite
 
 ## License
 
