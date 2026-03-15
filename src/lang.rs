@@ -5,154 +5,174 @@ pub struct FileInfo {
 }
 
 pub fn detect(data: &[u8]) -> FileInfo {
-    let packer     = detect_packer(data);
-    let obfuscator = detect_obfuscator(data);
-    let language   = detect_language(data);
+    // Binary magic-checks before lossy conversion
+    if data.len() >= 8 && data[..4] == [0xCA, 0xFE, 0xBA, 0xBE] {
+        let nfat = u32::from_be_bytes([data[4], data[5], data[6], data[7]]);
+        if nfat > 10 { // This is Java .class, not a Mach-O fat binary
+            return FileInfo {
+                language: "Java",
+                packer: None,
+                obfuscator: None,
+            };
+        }
+    }
+
+    let text = String::from_utf8_lossy(data);
+    let packer     = detect_packer(&text);
+    let obfuscator = detect_obfuscator(&text);
+    let language   = detect_language(&text);
 
     FileInfo { language, packer, obfuscator }
 }
 
-fn contains(data: &[u8], pattern: &[u8]) -> bool {
-    data.windows(pattern.len()).any(|w| w == pattern)
-}
-
-fn detect_packer(data: &[u8]) -> Option<&'static str> {
-    if contains(data, b"UPX0") || contains(data, b"UPX1") || contains(data, b"UPX!") {
+fn detect_packer(text: &str) -> Option<&'static str> {
+    if text.contains("UPX0") || text.contains("UPX1") || text.contains("UPX!") {
         return Some("UPX");
     }
-    if contains(data, b"MPRESS1") || contains(data, b"MPRESS2") {
+    if text.contains("MPRESS1") || text.contains("MPRESS2") {
         return Some("MPRESS");
     }
-    if contains(data, b".nsp0") || contains(data, b".nsp1") {
+    if text.contains(".nsp0") || text.contains(".nsp1") {
         return Some("NSPack");
     }
-    if contains(data, b"PECompact2") {
+    if text.contains("PECompact2") {
         return Some("PECompact");
     }
-    if contains(data, b"ASPack") {
+    if text.contains("ASPack") {
         return Some("ASPack");
     }
-    if contains(data, b"FSG!") {
+    if text.contains("FSG!") {
         return Some("FSG");
     }
-    if contains(data, b"PEC2") {
+    if text.contains("PEC2") {
         return Some("PECrypt32");
     }
-    if contains(data, b"Themida") {
+    if text.contains("Themida") {
         return Some("Themida");
     }
-    if contains(data, b"VMProtect") {
+    if text.contains("VMProtect") {
         return Some("VMProtect");
     }
     None
 }
 
-fn detect_obfuscator(data: &[u8]) -> Option<&'static str> {
-    let has_go_runtime = contains(data, b"runtime.") && contains(data, b"goroutine");
-    let has_build_id   = contains(data, b"Go build ID") || contains(data, b"go:buildid");
-    let has_go_symbols = contains(data, b"main.main") || contains(data, b"main.init");
+fn detect_obfuscator(text: &str) -> Option<&'static str> {
+    let has_go_runtime = text.contains("runtime.") && text.contains("goroutine");
+    let has_build_id   = text.contains("Go build ID") || text.contains("go:buildid");
+    let has_go_symbols = text.contains("main.main") || text.contains("main.init");
 
     if has_go_runtime && !has_build_id && !has_go_symbols {
         return Some("Garble (Go obfuscator)");
     }
 
-    if contains(data, b"ConfuserEx") || contains(data, b"Confuser") {
+    if text.contains("ConfuserEx") || text.contains("Confuser") {
         return Some("ConfuserEx (.NET)");
     }
-    if contains(data, b"de4dot") {
+    if text.contains("de4dot") {
         return Some("de4dot (.NET)");
     }
-    if contains(data, b".NET Reactor") {
+    if text.contains(".NET Reactor") {
         return Some(".NET Reactor");
     }
-    if contains(data, b"Eazfuscator") {
+    if text.contains("Eazfuscator") {
         return Some("Eazfuscator (.NET)");
     }
-    if contains(data, b"SmartAssembly") {
+    if text.contains("SmartAssembly") {
         return Some("SmartAssembly (.NET)");
     }
-    if contains(data, b"Dotfuscator") {
+    if text.contains("Dotfuscator") {
         return Some("Dotfuscator (.NET)");
     }
-    if contains(data, b"Enigma Protector") {
+    if text.contains("Enigma Protector") {
         return Some("Enigma Protector");
     }
-    if contains(data, b"Obsidium") {
+    if text.contains("Obsidium") {
         return Some("Obsidium");
+    }
+    if text.contains("PyArmor") {
+        return Some("Python (PyArmor protected)");
     }
     None
 }
 
-fn detect_language(data: &[u8]) -> &'static str {
+fn detect_language(text: &str) -> &'static str {
     // Go
-    if contains(data, b"Go build ID") || contains(data, b"go:buildid") {
+    if text.contains("Go build ID") || text.contains("go:buildid") {
         return "Go";
     }
-    if contains(data, b"runtime.gopanic") || contains(data, b"goroutine ") {
+    if text.contains("runtime.gopanic") || text.contains("goroutine ") {
         return "Go (obfuscated)";
     }
 
     // Rust
-    if contains(data, b"rustc") || contains(data, b"core::panicking") {
+    if text.contains("rustc") || text.contains("core::panicking") {
         return "Rust";
     }
-    if contains(data, b"rust_begin_unwind") || contains(data, b"__rust_") {
+    if text.contains("rust_begin_unwind") || text.contains("__rust_") {
         return "Rust";
     }
 
     // .NET / C#
-    if contains(data, b"_CorExeMain") || contains(data, b"mscoree.dll") {
+    if text.contains("_CorExeMain") || text.contains("mscoree.dll") {
         return ".NET / C#";
     }
-    if contains(data, b"mscorlib") {
+    if text.contains("mscorlib") {
         return ".NET / C#";
+    }
+
+    // Swift
+    if text.contains("_swift_") || text.contains("SwiftObject") {
+        return "Swift";
     }
 
     // Python
-    if contains(data, b"python3") || contains(data, b"Python 3") {
+    if text.contains("__nuitka") || text.contains("nuitka") {
+        return "Python (Nuitka)";
+    }
+    if text.contains("python3") || text.contains("Python 3") {
         return "Python";
     }
-    if contains(data, b".pydata") || contains(data, b"PyInstaller") {
+    if text.contains(".pydata") || text.contains("PyInstaller") {
         return "Python (PyInstaller)";
     }
-    if contains(data, b"Py_InitializeEx") {
+    if text.contains("Py_InitializeEx") {
         return "Python (embedded)";
     }
 
+    // Electron
+    if text.contains("app.asar") || text.contains("electron") {
+        return "Electron (Node.js)";
+    }
+
     // Delphi / Pascal
-    if contains(data, b"Borland") || contains(data, b"Delphi") {
+    if text.contains("Borland") || text.contains("Delphi") {
         return "Delphi / Pascal";
     }
-    if contains(data, b"TApplication") {
+    if text.contains("TApplication") {
         return "Delphi";
     }
 
     // AutoIt
-    if contains(data, b"AutoIt") || contains(data, b">AUTOIT") {
+    if text.contains("AutoIt") || text.contains(">AUTOIT") {
         return "AutoIt";
     }
 
     // VB6
-    if contains(data, b"VB5!") || contains(data, b"VB6!") || contains(data, b"MSVBVM60") {
+    if text.contains("VB5!") || text.contains("VB6!") || text.contains("MSVBVM60") {
         return "Visual Basic 6";
     }
 
     // C++ (MSVC)
-    if contains(data, b"MSVCP") || contains(data, b"VCRUNTIME") {
+    if text.contains("MSVCP") || text.contains("VCRUNTIME") {
         return "C++ (MSVC)";
     }
-    if contains(data, b"libstdc++") || contains(data, b"libgcc") {
+    if text.contains("libstdc++") || text.contains("libgcc") {
         return "C++ (GCC/MinGW)";
     }
 
     // C++ (Clang)
-    if contains(data, b"clang") {
+    if text.contains("clang") {
         return "C / C++ (Clang)";
-    }
-
-    // Java
-    if data.len() >= 4 && &data[..4] == b"\xCA\xFE\xBA\xBE" {
-        return "Java";
     }
 
     "Unknown / C"

@@ -1,4 +1,9 @@
 pub fn extract(data: &[u8], min_len: usize) -> Vec<String> {
+    let data = if data.len() > 100_000_000 {
+        &data[..100_000_000]
+    } else {
+        data
+    };
     let mut results = Vec::new();
     let mut current = Vec::new();
 

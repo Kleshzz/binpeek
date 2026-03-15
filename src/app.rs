@@ -1,72 +1,137 @@
 use crate::{detector, disasm, entropy, formats, lang, strings};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 pub const TAB_NAMES: [&str; 5] = ["Overview", "Sections", "Imports", "Strings", "Disasm"];
 
 pub struct App {
-    pub tab: usize,
-    pub scroll: u16,
-    pub tabs: [Vec<String>; 5],
+    pub tab:       usize,
+    pub scroll:    u16,
+    pub tabs:      [Vec<String>; 5],
     pub file_name: String,
 }
 
+pub type Progress = Arc<Mutex<LoadProgress>>;
+
+pub struct LoadProgress {
+    pub steps_done: u8,
+    pub total:      u8,
+    pub current:    &'static str,
+}
+
+impl LoadProgress {
+    pub fn new() -> Progress {
+        Arc::new(Mutex::new(Self {
+            steps_done: 0,
+            total: 4,
+            current: "Starting...",
+        }))
+    }
+
+    pub fn percent(p: &Progress) -> u8 {
+        let p = p.lock().unwrap();
+        if p.total == 0 { return 0; }
+        (p.steps_done as u16 * 100 / p.total as u16) as u8
+    }
+
+    pub fn label(p: &Progress) -> String {
+        p.lock().unwrap().current.to_string()
+    }
+}
+
 impl App {
-    pub fn new(path: &std::path::Path, data: &[u8]) -> Self {
+    pub fn new(path: &std::path::Path, data: &[u8], progress: &Progress) -> Self {
         let file_name = path
             .file_name()
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
 
-        let is_pe  = data.len() >= 2 && data[0] == 0x4D && data[1] == 0x5A;
-        let is_elf = data.len() >= 4 && data[..4] == [0x7F, 0x45, 0x4C, 0x46];
+        let is_pe    = data.len() >= 2 && data[0] == 0x4D && data[1] == 0x5A;
+        let is_elf   = data.len() >= 4 && data[..4] == [0x7F, 0x45, 0x4C, 0x46];
+        let is_macho = data.len() >= 4 && (
+            data[..4] == [0xFE, 0xED, 0xFA, 0xCE] ||
+            data[..4] == [0xFE, 0xED, 0xFA, 0xCF] ||
+            data[..4] == [0xCE, 0xFA, 0xED, 0xFE] ||
+            data[..4] == [0xCF, 0xFA, 0xED, 0xFE] ||
+            data[..4] == [0xCA, 0xFE, 0xBA, 0xBE] ||
+            data[..4] == [0xBE, 0xBA, 0xFE, 0xCA]
+        );
 
         let data_arc = Arc::new(data.to_vec());
 
-        // Strings — самое медленное на больших файлах, запускаем первым
         let d1 = data_arc.clone();
-        let t_strings = std::thread::spawn(move || strings::extract(&d1, 5));
+        let p1 = progress.clone();
+        let t_strings = std::thread::spawn(move || {
+            { let mut p = p1.lock().unwrap(); p.current = "Extracting strings..."; }
+            let r = strings::extract(&d1, 5);
+            { let mut p = p1.lock().unwrap(); p.steps_done += 1; }
+            r
+        });
 
-        // Sections + Imports
         let d2 = data_arc.clone();
+        let p2 = progress.clone();
         let t_sections = std::thread::spawn(move || {
-            if is_pe {
+            { let mut p = p2.lock().unwrap(); p.current = "Parsing sections & imports..."; }
+            let r = if is_pe {
                 formats::pe_parse_all(&d2)
             } else if is_elf {
                 formats::elf_parse_all(&d2)
+            } else if is_macho {
+                formats::macho_parse_all(&d2)
             } else {
                 (
                     vec!["  Not supported for this format".to_string()],
                     vec!["  Not supported for this format".to_string()],
                 )
-            }
+            };
+            { let mut p = p2.lock().unwrap(); p.steps_done += 1; }
+            r
         });
 
-        // Disasm
         let d3 = data_arc.clone();
+        let p3 = progress.clone();
         let t_disasm = std::thread::spawn(move || {
+            { let mut p = p3.lock().unwrap(); p.current = "Disassembling .text..."; }
             let text = if is_pe {
                 formats::pe_text_section(&d3)
             } else if is_elf {
                 formats::elf_text_section(&d3)
+            } else if is_macho {
+                formats::macho_text_section(&d3)
             } else {
                 None
             };
-            match text {
+            let r = match text {
                 Some((bytes, addr, is_64)) => disasm::disassemble(&bytes, is_64, addr),
                 None => vec!["  .text section not found or format not supported".to_string()],
-            }
+            };
+            { let mut p = p3.lock().unwrap(); p.steps_done += 1; }
+            r
         });
 
-        // Overview считаем в главном потоке пока остальные работают
+        {
+            let mut p = progress.lock().unwrap();
+            p.current = "Calculating entropy...";
+        }
         let ent       = entropy::calculate(&data_arc);
-        let format    = detector::detect_str(&data_arc);
+        let format = detector::detect_with_path(&data_arc, path);
         let lang_info = lang::detect(&data_arc);
         let overview  = build_overview(&file_name, data_arc.len(), ent, &format, &lang_info);
+        {
+            let mut p = progress.lock().unwrap();
+            p.steps_done += 1;
+            p.current = "Finishing...";
+        }
 
         let strings             = t_strings.join().unwrap();
         let (sections, imports) = t_sections.join().unwrap();
         let disasm              = t_disasm.join().unwrap();
+
+        {
+            let mut p = progress.lock().unwrap();
+            p.steps_done = p.total;
+            p.current = "Done";
+        }
 
         Self {
             tab: 0,
@@ -86,14 +151,11 @@ impl App {
 
     pub fn clamp_scroll(&mut self) {
         let max = self.max_scroll();
-        if self.scroll > max {
-            self.scroll = max;
-        }
+        if self.scroll > max { self.scroll = max; }
     }
 
     pub fn scroll_down(&mut self, n: u16) {
-        let max = self.max_scroll();
-        self.scroll = self.scroll.saturating_add(n).min(max);
+        self.scroll = self.scroll.saturating_add(n).min(self.max_scroll());
     }
 
     pub fn scroll_up(&mut self, n: u16) {
@@ -138,7 +200,6 @@ fn build_overview(
     lines.push("    ↑ ↓              — scroll line".to_string());
     lines.push("    PgUp / PgDn      — scroll page".to_string());
     lines.push("    Home / End       — top / bottom".to_string());
-    lines.push("    Tab / Shift+Tab  — next / prev tab".to_string());
     lines.push("    q / Esc          — quit".to_string());
 
     lines

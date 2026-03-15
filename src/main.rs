@@ -51,6 +51,13 @@ fn main() {
         );
     }
 
-    let app = app::App::new(&cli.file, &data);
-    ui::run(app);
+    let progress = app::LoadProgress::new();
+    let p = progress.clone();
+    let path = cli.file.clone();
+
+    let handle = std::thread::spawn(move || {
+        app::App::new(&path, &data, &p)
+    });
+
+    ui::run_loading(&progress, handle);
 }

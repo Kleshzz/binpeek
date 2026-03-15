@@ -1,4 +1,5 @@
-use crate::app::{App, TAB_NAMES};
+use std::thread::JoinHandle;
+use crate::app::{Progress, App, TAB_NAMES};
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
     execute,
@@ -12,6 +13,121 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph, Tabs},
     Terminal,
 };
+
+pub fn run_loading(progress: &Progress, handle: JoinHandle<crate::app::App>) {
+    enable_raw_mode().unwrap();
+    let mut stdout = std::io::stdout();
+    execute!(stdout, EnterAlternateScreen).unwrap();
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend).unwrap();
+
+    use std::sync::mpsc;
+    let (tx, rx) = mpsc::channel();
+    let _handle = std::thread::spawn(move || {
+        let result = handle.join().unwrap();
+        tx.send(result).unwrap();
+    });
+
+    let spinner = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"];
+    let mut frame: usize = 0;
+
+    loop {
+        if let Ok(app) = rx.try_recv() {
+            disable_raw_mode().unwrap();
+            execute!(terminal.backend_mut(), LeaveAlternateScreen).unwrap();
+            run(app);
+            return;
+        }
+
+        let pct   = crate::app::LoadProgress::percent(progress);
+        let label = crate::app::LoadProgress::label(progress);
+        let spin  = spinner[frame % spinner.len()];
+        frame += 1;
+
+        terminal.draw(|f| {
+            let size = f.area();
+
+            let bg = Block::default()
+                .style(Style::default().bg(Color::Black));
+            f.render_widget(bg, size);
+
+            let popup_width  = size.width.min(60);
+            let popup_height = 9u16;
+            let popup_x = (size.width.saturating_sub(popup_width)) / 2;
+            let popup_y = (size.height.saturating_sub(popup_height)) / 2;
+
+            let popup_area = ratatui::layout::Rect {
+                x: popup_x,
+                y: popup_y,
+                width: popup_width,
+                height: popup_height,
+            };
+
+            let popup_block = Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Cyan))
+                .title(Span::styled(
+                    " binpeek ",
+                    Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+                ));
+            f.render_widget(popup_block, popup_area);
+
+            let inner = ratatui::layout::Rect {
+                x: popup_x + 2,
+                y: popup_y + 1,
+                width: popup_width.saturating_sub(4),
+                height: popup_height.saturating_sub(2),
+            };
+
+            let status_line = format!("  {}  {}", spin, label);
+            let status = Paragraph::new(Span::styled(
+                status_line,
+                Style::default().fg(Color::White),
+            ));
+            f.render_widget(status, ratatui::layout::Rect {
+                x: inner.x,
+                y: inner.y + 1,
+                width: inner.width,
+                height: 1,
+            });
+
+            let bar_width = inner.width as usize;
+            let filled = (bar_width * pct.min(100) as usize / 100).min(bar_width);
+            let empty  = bar_width.saturating_sub(filled);
+
+            let bar_filled = Span::styled(
+                "█".repeat(filled),
+                Style::default().fg(Color::Cyan),
+            );
+            let bar_empty = Span::styled(
+                "░".repeat(empty),
+                Style::default().fg(Color::DarkGray),
+            );
+
+            let bar_line = Line::from(vec![bar_filled, bar_empty]);
+            let bar = Paragraph::new(bar_line);
+            f.render_widget(bar, ratatui::layout::Rect {
+                x: inner.x,
+                y: inner.y + 3,
+                width: inner.width,
+                height: 1,
+            });
+
+            let pct_text = Paragraph::new(Span::styled(
+                format!("  {}%", pct),
+                Style::default().fg(Color::DarkGray),
+            ));
+            f.render_widget(pct_text, ratatui::layout::Rect {
+                x: inner.x,
+                y: inner.y + 4,
+                width: inner.width,
+                height: 1,
+            });
+        }).unwrap();
+
+        std::thread::sleep(std::time::Duration::from_millis(80));
+    }
+}
 
 pub fn run(mut app: App) {
     enable_raw_mode().unwrap();
@@ -34,7 +150,6 @@ pub fn run(mut app: App) {
                 ])
                 .split(size);
 
-            // ── Tab bar ──────────────────────────────────────────────────
             let tab_titles: Vec<Line> = TAB_NAMES
                 .iter()
                 .enumerate()
@@ -55,7 +170,6 @@ pub fn run(mut app: App) {
                 .style(Style::default().fg(Color::Gray));
             f.render_widget(tabs_widget, chunks[0]);
 
-            // ── Content ───────────────────────────────────────────────────
             let scroll_info = format!(
                 " {}/{} ",
                 app.scroll + 1,
@@ -80,7 +194,6 @@ pub fn run(mut app: App) {
             let list = List::new(items).block(content_block);
             f.render_widget(list, chunks[1]);
 
-            // ── Status bar ────────────────────────────────────────────────
             let help = Paragraph::new(Span::styled(
                 " [1-5] Tabs  [↑↓] Scroll  [PgUp/PgDn] Page  [Home] Top  [q] Quit",
                 Style::default().fg(Color::DarkGray),
@@ -90,7 +203,6 @@ pub fn run(mut app: App) {
 
         if event::poll(std::time::Duration::from_millis(100)).unwrap() {
             if let Event::Key(key) = event::read().unwrap() {
-                // Игнорируем release-события (важно для Windows)
                 if key.kind == KeyEventKind::Release {
                     continue;
                 }

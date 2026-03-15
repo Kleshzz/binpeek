@@ -3,7 +3,6 @@ use goblin::elf::Elf;
 pub fn elf_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>) {
     match Elf::parse(data) {
         Ok(elf) => {
-            // Sections
             let mut sections = vec![
                 format!("  Architecture : {}", if elf.is_64 { "64-bit" } else { "32-bit" }),
                 format!("  Little endian: {}", elf.little_endian),
@@ -20,7 +19,6 @@ pub fn elf_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>) {
                 ));
             }
 
-            // Imports
             let mut imports = vec![];
             if !elf.libraries.is_empty() {
                 imports.push("  [Libraries]".to_string());
