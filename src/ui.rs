@@ -1,6 +1,6 @@
-use crate::{detector, disasm, entropy, formats, lang, strings};
+use crate::app::{App, TAB_NAMES};
 use crossterm::{
-    event::{self, Event, KeyCode},
+    event::{self, Event, KeyCode, KeyEventKind},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -12,72 +12,19 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph, Tabs},
     Terminal,
 };
-use std::path::PathBuf;
 
-pub fn run(path: PathBuf, data: Vec<u8>) {
+pub fn run(mut app: App) {
     enable_raw_mode().unwrap();
     let mut stdout = std::io::stdout();
     execute!(stdout, EnterAlternateScreen).unwrap();
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend).unwrap();
 
-    let file_name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
-    let file_size = data.len();
-    let ent = entropy::calculate(&data);
-    let format = detector::detect_str(&data);
-    let lang_info = lang::detect(&data);
-
-    let is_pe  = data.len() >= 2 && data[0] == 0x4D && data[1] == 0x5A;
-    let is_elf = data.len() >= 4 && data[..4] == [0x7F, 0x45, 0x4C, 0x46];
-    
-    let overview_lines = build_overview(&file_name, file_size, ent, &format, &lang_info);
-    let (sections_lines, imports_lines) = if is_pe {
-        formats::pe_parse_all(&data)
-    } else if is_elf {
-        formats::elf_parse_all(&data)
-    } else {
-        (
-            vec!["  Not supported for this format".to_string()],
-            vec!["  Not supported for this format".to_string()],
-        )
-    };
-    let strings_lines = strings::extract(&data, 5);
-
-    let disasm_lines = {
-        let text = if is_pe {
-            formats::pe_text_section(&data)
-        } else if is_elf{
-            formats::elf_text_section(&data)
-        } else {
-            None
-        };
-        match text {
-            Some((bytes, addr, is_64)) => disasm::disassemble(&bytes, is_64, addr),
-            None => vec!["  .text section not found or format not supported".to_string()],
-        }
-    };
-
-    let all_tabs = [
-        &overview_lines,
-        &sections_lines,
-        &imports_lines,
-        &strings_lines,
-        &disasm_lines,
-    ];
-
-    let tabs = ["Overview", "Sections", "Imports", "Strings", "Disasm"];
-    let mut tab: usize = 0;
-    let mut scroll: u16 = 0;
-
     loop {
-        let max_scroll = all_tabs[tab].len().saturating_sub(1) as u16;
-        if scroll > max_scroll {
-            scroll = max_scroll;
-        }
+        app.clamp_scroll();
 
         terminal.draw(|f| {
             let size = f.area();
-
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([
@@ -87,26 +34,45 @@ pub fn run(path: PathBuf, data: Vec<u8>) {
                 ])
                 .split(size);
 
-            // Tabs
-            let tab_titles: Vec<Line> = tabs.iter().map(|t| Line::from(*t)).collect();
+            // ── Tab bar ──────────────────────────────────────────────────
+            let tab_titles: Vec<Line> = TAB_NAMES
+                .iter()
+                .enumerate()
+                .map(|(i, name)| {
+                    let count = app.tabs[i].len();
+                    Line::from(format!(" {} ({}) ", name, count))
+                })
+                .collect();
+
             let tabs_widget = Tabs::new(tab_titles)
-                .select(tab)
-                .block(Block::default().borders(Borders::ALL).title(" binpeek "))
-                .highlight_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+                .select(app.tab)
+                .block(Block::default().borders(Borders::ALL).title(format!(" binpeek — {} ", app.file_name)))
+                .highlight_style(
+                    Style::default()
+                        .fg(Color::Cyan)
+                        .add_modifier(Modifier::BOLD),
+                )
                 .style(Style::default().fg(Color::Gray));
             f.render_widget(tabs_widget, chunks[0]);
 
-            // Content
+            // ── Content ───────────────────────────────────────────────────
+            let scroll_info = format!(
+                " {}/{} ",
+                app.scroll + 1,
+                app.current_tab().len()
+            );
             let content_block = Block::default()
                 .borders(Borders::ALL)
-                .title(format!(" {} ", tabs[tab]))
+                .title(format!(" {} ", TAB_NAMES[app.tab]))
+                .title_bottom(Line::from(scroll_info).right_aligned())
                 .border_style(Style::default().fg(Color::DarkGray));
 
             let visible_height = chunks[1].height.saturating_sub(2) as usize;
 
-            let items: Vec<ListItem> = all_tabs[tab]
+            let items: Vec<ListItem> = app
+                .current_tab()
                 .iter()
-                .skip(scroll as usize)
+                .skip(app.scroll as usize)
                 .take(visible_height)
                 .map(|l| ListItem::new(l.as_str()))
                 .collect();
@@ -114,9 +80,9 @@ pub fn run(path: PathBuf, data: Vec<u8>) {
             let list = List::new(items).block(content_block);
             f.render_widget(list, chunks[1]);
 
-            // Help bar
+            // ── Status bar ────────────────────────────────────────────────
             let help = Paragraph::new(Span::styled(
-                " [1-5] Switch tabs  [↑↓ / PgUp/PgDn] Scroll  [q] Quit",
+                " [1-5] Tabs  [↑↓] Scroll  [PgUp/PgDn] Page  [Home] Top  [q] Quit",
                 Style::default().fg(Color::DarkGray),
             ));
             f.render_widget(help, chunks[2]);
@@ -124,18 +90,25 @@ pub fn run(path: PathBuf, data: Vec<u8>) {
 
         if event::poll(std::time::Duration::from_millis(100)).unwrap() {
             if let Event::Key(key) = event::read().unwrap() {
+                // Игнорируем release-события (важно для Windows)
+                if key.kind == KeyEventKind::Release {
+                    continue;
+                }
                 match key.code {
-                    KeyCode::Char('q') => break,
-                    KeyCode::Char('1') => { tab = 0; scroll = 0; }
-                    KeyCode::Char('2') => { tab = 1; scroll = 0; }
-                    KeyCode::Char('3') => { tab = 2; scroll = 0; }
-                    KeyCode::Char('4') => { tab = 3; scroll = 0; }
-                    KeyCode::Char('5') => { tab = 4; scroll = 0; }
-                    KeyCode::Down     => scroll = scroll.saturating_add(1).min(max_scroll),
-                    KeyCode::Up       => scroll = scroll.saturating_sub(1),
-                    KeyCode::PageDown => scroll = scroll.saturating_add(20).min(max_scroll),
-                    KeyCode::PageUp   => scroll = scroll.saturating_sub(20),
-                    KeyCode::Home     => scroll = 0,
+                    KeyCode::Char('q') | KeyCode::Esc => break,
+                    KeyCode::Char('1') => app.go_to_tab(0),
+                    KeyCode::Char('2') => app.go_to_tab(1),
+                    KeyCode::Char('3') => app.go_to_tab(2),
+                    KeyCode::Char('4') => app.go_to_tab(3),
+                    KeyCode::Char('5') => app.go_to_tab(4),
+                    KeyCode::Down      => app.scroll_down(1),
+                    KeyCode::Up        => app.scroll_up(1),
+                    KeyCode::PageDown  => app.scroll_down(20),
+                    KeyCode::PageUp    => app.scroll_up(20),
+                    KeyCode::Home      => app.scroll = 0,
+                    KeyCode::End       => app.scroll = app.max_scroll(),
+                    KeyCode::Tab       => app.go_to_tab((app.tab + 1) % TAB_NAMES.len()),
+                    KeyCode::BackTab   => app.go_to_tab((app.tab + TAB_NAMES.len() - 1) % TAB_NAMES.len()),
                     _ => {}
                 }
             }
@@ -144,33 +117,4 @@ pub fn run(path: PathBuf, data: Vec<u8>) {
 
     disable_raw_mode().unwrap();
     execute!(terminal.backend_mut(), LeaveAlternateScreen).unwrap();
-}
-
-fn build_overview(name: &str, size: usize, ent: f64, format: &str, info: &lang::FileInfo) -> Vec<String> {
-    let mut lines = vec![
-        String::new(),
-        format!("  File       : {}", name),
-        format!("  Size       : {} bytes  ({:.1} KB)", size, size as f64 / 1024.0),
-        format!("  Format     : {}", format),
-        format!("  Language   : {}", info.language),
-        format!("  Entropy    : {:.4}  — {}", ent, entropy::label(ent)),
-    ];
-
-    if let Some(packer) = info.packer {
-        lines.push(format!("  Packer     : {} unpack first - upx -d <file>", packer));
-    }
-    if let Some(obf) = info.obfuscator {
-        lines.push(format!("  Obfuscator : {}", obf));
-    }
-
-    lines.push(String::new());
-    lines.push("  ─────────────────────────────".to_string());
-    lines.push("  Controls:".to_string());
-    lines.push("    1-5              — switch tabs".to_string());
-    lines.push("    ↑ ↓              — scroll line".to_string());
-    lines.push("    PgUp / PgDn      — scroll page".to_string());
-    lines.push("    Home             — scroll to top".to_string());
-    lines.push("    q                — quit".to_string());
-
-    lines
 }

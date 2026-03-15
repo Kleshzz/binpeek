@@ -57,7 +57,7 @@ pub fn pe_text_section(data: &[u8]) -> Option<(Vec<u8>, u64, bool)> {
                     let size   = section.size_of_raw_data as usize;
                     if offset + size <= data.len() {
                         let bytes = data[offset..offset + size].to_vec();
-                        let va    = pe.image_base as u64 + section.virtual_address as u64;
+                        let va = pe.image_base + section.virtual_address as u64;
                         return Some((bytes, va, pe.is_64));
                     }
                 }

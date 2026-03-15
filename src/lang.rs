@@ -48,10 +48,11 @@ fn detect_packer(data: &[u8]) -> Option<&'static str> {
 }
 
 fn detect_obfuscator(data: &[u8]) -> Option<&'static str> {
-    // Go garble — нет build id, нет читаемых символов
-    if contains(data, b"Go build ID") {
-        // обычный Go, не обфусцированный
-    } else if contains(data, b"runtime.") && contains(data, b"goroutine") {
+    let has_go_runtime = contains(data, b"runtime.") && contains(data, b"goroutine");
+    let has_build_id   = contains(data, b"Go build ID") || contains(data, b"go:buildid");
+    let has_go_symbols = contains(data, b"main.main") || contains(data, b"main.init");
+
+    if has_go_runtime && !has_build_id && !has_go_symbols {
         return Some("Garble (Go obfuscator)");
     }
 

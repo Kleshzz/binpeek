@@ -1,6 +1,7 @@
 use clap::Parser;
 use std::path::PathBuf;
 
+mod app;
 mod detector;
 mod disasm;
 mod entropy;
@@ -44,8 +45,12 @@ fn main() {
     }
 
     if data.len() > 100 * 1024 * 1024 {
-        eprintln!("Warning: large file ({:.0} MB), analysis may be slow", data.len() as f64 / 1_048_576.0);
+        eprintln!(
+            "Warning: large file ({:.0} MB), analysis may be slow",
+            data.len() as f64 / 1_048_576.0
+        );
     }
 
-    ui::run(cli.file.clone(), data);
+    let app = app::App::new(&cli.file, &data);
+    ui::run(app);
 }

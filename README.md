@@ -8,12 +8,12 @@ Supports **PE** (Windows `.exe` / `.dll`), **ELF** (Linux), **Mach-O** (macOS) a
 
 ## Features
 
-- 📋 **Overview** — file size, format detection, entropy, language, packer and obfuscator detection
-- 🗂 **Sections** — virtual addresses, sizes, entry point, image base
-- 📦 **Imports** — imported DLLs and functions (PE) / libraries and symbols (ELF)
-- 🔤 **Strings** — extracted printable ASCII strings (min. 5 chars, up to 10 000)
-- 🔬 **Disasm** — disassembly of the `.text` section via Capstone (x86/x64)
-- ⚡ Fast and lightweight — single binary, no runtime dependencies
+- **Overview** — file size, format detection, entropy, language, packer and obfuscator detection
+- **Sections** — virtual addresses, sizes, entry point, image base
+- **Imports** — imported DLLs and functions (PE) / libraries and symbols (ELF)
+- **Strings** — extracted printable ASCII strings (min. 5 chars, up to 10 000)
+- **Disasm** — disassembly of the `.text` section via Capstone (x86/x64)
+- Fast and lightweight — single binary, no runtime dependencies
 
 ## Installation
 
@@ -50,7 +50,7 @@ Binary will be at `target/release/binpeek` (or `binpeek.exe` on Windows).
 ## Usage
 
 ```bash
-binpeek <file>
+binpeek <file-path>
 ```
 
 **Examples:**
@@ -72,7 +72,7 @@ binpeek archive.zip
 
 > **Tip:** If a file is packed with UPX, binpeek will detect it and suggest unpacking first:
 > ```
-> Packer: UPX ⚠ unpack first: upx -d <file>
+> Packer: UPX ⚠ unpack first: upx -d <file-path>
 > ```
 
 ## Controls
