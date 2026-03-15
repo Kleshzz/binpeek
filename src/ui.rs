@@ -26,37 +26,49 @@ pub fn run(path: PathBuf, data: Vec<u8>) {
     let ent = entropy::calculate(&data);
     let format = detector::detect_str(&data);
 
-    let is_pe = data.len() >= 2 && data[0] == 0x4D && data[1] == 0x5A;
-    let is_elf = data.len() >= 4 && &data[..4] == &[0x7F, 0x45, 0x4C, 0x46];
+    let is_pe  = data.len() >= 2 && data[0] == 0x4D && data[1] == 0x5A;
+    let is_elf = data.len() >= 4 && data[..4] == [0x7F, 0x45, 0x4C, 0x46];
 
     let overview_lines = build_overview(&file_name, file_size, ent, &format);
-    let sections_lines = if is_pe {
-        formats::pe_sections_str(&data)
+    let (sections_lines, imports_lines) = if is_pe {
+        formats::pe_parse_all(&data)
     } else if is_elf {
-        formats::elf_sections_str(&data)
+        formats::elf_parse_all(&data)
     } else {
-        vec!["  Not supported for this format".to_string()]
-    };
-    let imports_lines = if is_pe {
-        formats::pe_imports_str(&data)
-    } else if is_elf {
-        formats::elf_imports_str(&data)
-    } else {
-        vec!["  Not supported for this format".to_string()]
+        (
+            vec!["  Not supported for this format".to_string()],
+            vec!["  Not supported for this format".to_string()],
+        )
     };
     let strings_lines = strings::extract(&data, 5);
 
-    let tabs = vec!["Overview", "Sections", "Imports", "Strings"];
+    let all_tabs = [
+        &overview_lines,
+        &sections_lines,
+        &imports_lines,
+        &strings_lines,
+    ];
+
+    let tabs = ["Overview", "Sections", "Imports", "Strings"];
     let mut tab: usize = 0;
     let mut scroll: u16 = 0;
 
     loop {
+        let max_scroll = all_tabs[tab].len().saturating_sub(1) as u16;
+        if scroll > max_scroll {
+            scroll = max_scroll;
+        }
+
         terminal.draw(|f| {
             let size = f.area();
 
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([Constraint::Length(3), Constraint::Min(1), Constraint::Length(1)])
+                .constraints([
+                    Constraint::Length(3),
+                    Constraint::Min(1),
+                    Constraint::Length(1),
+                ])
                 .split(size);
 
             // Tabs
@@ -74,17 +86,12 @@ pub fn run(path: PathBuf, data: Vec<u8>) {
                 .title(format!(" {} ", tabs[tab]))
                 .border_style(Style::default().fg(Color::DarkGray));
 
-            let current_list = match tab {
-                0 => &overview_lines,
-                1 => &sections_lines,
-                2 => &imports_lines,
-                3 => &strings_lines,
-                _ => &overview_lines,
-            };
+            let visible_height = chunks[1].height.saturating_sub(2) as usize;
 
-            let items: Vec<ListItem> = current_list
+            let items: Vec<ListItem> = all_tabs[tab]
                 .iter()
                 .skip(scroll as usize)
+                .take(visible_height)
                 .map(|l| ListItem::new(l.as_str()))
                 .collect();
 
@@ -107,11 +114,11 @@ pub fn run(path: PathBuf, data: Vec<u8>) {
                     KeyCode::Char('2') => { tab = 1; scroll = 0; }
                     KeyCode::Char('3') => { tab = 2; scroll = 0; }
                     KeyCode::Char('4') => { tab = 3; scroll = 0; }
-                    KeyCode::Down  => scroll = scroll.saturating_add(1),
-                    KeyCode::Up    => scroll = scroll.saturating_sub(1),
-                    KeyCode::PageDown => scroll = scroll.saturating_add(20),
+                    KeyCode::Down     => scroll = scroll.saturating_add(1).min(max_scroll),
+                    KeyCode::Up       => scroll = scroll.saturating_sub(1),
+                    KeyCode::PageDown => scroll = scroll.saturating_add(20).min(max_scroll),
                     KeyCode::PageUp   => scroll = scroll.saturating_sub(20),
-                    KeyCode::Home  => scroll = 0,
+                    KeyCode::Home     => scroll = 0,
                     _ => {}
                 }
             }

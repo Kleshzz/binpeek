@@ -1,9 +1,10 @@
 use goblin::pe::PE;
 
-pub fn pe_sections_str(data: &[u8]) -> Vec<String> {
+pub fn pe_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>) {
     match PE::parse(data) {
         Ok(pe) => {
-            let mut lines = vec![
+            // Sections
+            let mut sections = vec![
                 format!("  Entry point : 0x{:X}", pe.entry),
                 format!("  Image base  : 0x{:X}", pe.image_base),
                 format!("  64-bit      : {}", pe.is_64),
@@ -17,34 +18,29 @@ pub fn pe_sections_str(data: &[u8]) -> Vec<String> {
                     .unwrap_or("?")
                     .trim_matches('\0')
                     .to_string();
-                lines.push(format!(
+                sections.push(format!(
                     "  {:10}  0x{:08X}    {:>10} bytes",
                     name, s.virtual_address, s.size_of_raw_data
                 ));
             }
-            lines
-        }
-        Err(e) => vec![format!("Parse error: {}", e)],
-    }
-}
 
-pub fn pe_imports_str(data: &[u8]) -> Vec<String> {
-    match PE::parse(data) {
-        Ok(pe) => {
-            let mut lines = vec![];
+            // Imports
+            let mut imports = vec![];
             let mut current_dll = String::new();
             for import in &pe.imports {
                 if import.dll != current_dll {
-                    if !current_dll.is_empty() {
-                        lines.push(String::new());
-                    }
-                    lines.push(format!("  [{}]", import.dll));
+                    if !current_dll.is_empty() { imports.push(String::new()); }
+                    imports.push(format!("  [{}]", import.dll));
                     current_dll = import.dll.to_string();
                 }
-                lines.push(format!("    {}", import.name));
+                imports.push(format!("    {}", import.name));
             }
-            lines
+
+            (sections, imports)
         }
-        Err(e) => vec![format!("Parse error: {}", e)],
+        Err(e) => (
+            vec![format!("Parse error: {}", e)],
+            vec![format!("Parse error: {}", e)],
+        ),
     }
 }

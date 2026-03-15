@@ -10,7 +10,7 @@ mod ui;
 #[derive(Parser)]
 #[command(name = "binpeek")]
 #[command(version)]
-#[command(about = "Terminal-based inary file inspector")]
+#[command(about = "Terminal-based binary file inspector")]
 pub struct Cli {
     pub file: PathBuf,
 }
@@ -24,21 +24,25 @@ fn main() {
     }
 
     if !cli.file.is_file() {
-        eprintln!("error: '{}' is not a file", cli.file.display());
+        eprintln!("Error: '{}' is not a file", cli.file.display());
         std::process::exit(1);
     }
 
     let data = match std::fs::read(&cli.file) {
         Ok(d) => d,
         Err(e) => {
-            eprintln!("error: could not read '{}': {}", cli.file.display(), e);
+            eprintln!("Error: could not read '{}': {}", cli.file.display(), e);
             std::process::exit(1);
         }
     };
 
     if data.is_empty() {
-        eprintln!("error: file '{}' is empty", cli.file.display());
+        eprintln!("Error: file '{}' is empty", cli.file.display());
         std::process::exit(1);
+    }
+
+    if data.len() > 100 * 1024 * 1024 {
+        eprintln!("Warning: large file ({:.0} MB), analysis may be slow", data.len() as f64 / 1_048_576.0);
     }
 
     ui::run(cli.file.clone(), data);
