@@ -46,3 +46,23 @@ pub fn elf_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>) {
         ),
     }
 }
+
+pub fn elf_text_section(data: &[u8]) -> Option<(Vec<u8>, u64, bool)> {
+    match Elf::parse(data) {
+        Ok(elf) => {
+            for section in &elf.section_headers {
+                let name = elf.shdr_strtab.get_at(section.sh_name).unwrap_or("");
+                if name == ".text" {
+                    let offset = section.sh_offset as usize;
+                    let size   = section.sh_size as usize;
+                    if offset + size <= data.len() {
+                        let bytes = data[offset..offset + size].to_vec();
+                        return Some((bytes, section.sh_addr, elf.is_64));
+                    }
+                }
+            }
+            None
+        }
+        Err(_) => None,
+    }
+}

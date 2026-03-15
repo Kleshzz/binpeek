@@ -1,4 +1,4 @@
-use crate::{detector, entropy, formats, strings};
+use crate::{detector, disasm, entropy, formats, lang, strings};
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
@@ -25,11 +25,12 @@ pub fn run(path: PathBuf, data: Vec<u8>) {
     let file_size = data.len();
     let ent = entropy::calculate(&data);
     let format = detector::detect_str(&data);
+    let lang_info = lang::detect(&data);
 
     let is_pe  = data.len() >= 2 && data[0] == 0x4D && data[1] == 0x5A;
     let is_elf = data.len() >= 4 && data[..4] == [0x7F, 0x45, 0x4C, 0x46];
-
-    let overview_lines = build_overview(&file_name, file_size, ent, &format);
+    
+    let overview_lines = build_overview(&file_name, file_size, ent, &format, &lang_info);
     let (sections_lines, imports_lines) = if is_pe {
         formats::pe_parse_all(&data)
     } else if is_elf {
@@ -42,14 +43,29 @@ pub fn run(path: PathBuf, data: Vec<u8>) {
     };
     let strings_lines = strings::extract(&data, 5);
 
+    let disasm_lines = {
+        let text = if is_pe {
+            formats::pe_text_section(&data)
+        } else if is_elf{
+            formats::elf_text_section(&data)
+        } else {
+            None
+        };
+        match text {
+            Some((bytes, addr, is_64)) => disasm::disassemble(&bytes, is_64, addr),
+            None => vec!["  .text section not found or format not supported".to_string()],
+        }
+    };
+
     let all_tabs = [
         &overview_lines,
         &sections_lines,
         &imports_lines,
         &strings_lines,
+        &disasm_lines,
     ];
 
-    let tabs = ["Overview", "Sections", "Imports", "Strings"];
+    let tabs = ["Overview", "Sections", "Imports", "Strings", "Disasm"];
     let mut tab: usize = 0;
     let mut scroll: u16 = 0;
 
@@ -100,7 +116,7 @@ pub fn run(path: PathBuf, data: Vec<u8>) {
 
             // Help bar
             let help = Paragraph::new(Span::styled(
-                " [1-4] Switch tabs  [↑↓ / PgUp/PgDn] Scroll  [q] Quit",
+                " [1-5] Switch tabs  [↑↓ / PgUp/PgDn] Scroll  [q] Quit",
                 Style::default().fg(Color::DarkGray),
             ));
             f.render_widget(help, chunks[2]);
@@ -114,6 +130,7 @@ pub fn run(path: PathBuf, data: Vec<u8>) {
                     KeyCode::Char('2') => { tab = 1; scroll = 0; }
                     KeyCode::Char('3') => { tab = 2; scroll = 0; }
                     KeyCode::Char('4') => { tab = 3; scroll = 0; }
+                    KeyCode::Char('5') => { tab = 4; scroll = 0; }
                     KeyCode::Down     => scroll = scroll.saturating_add(1).min(max_scroll),
                     KeyCode::Up       => scroll = scroll.saturating_sub(1),
                     KeyCode::PageDown => scroll = scroll.saturating_add(20).min(max_scroll),
@@ -129,20 +146,31 @@ pub fn run(path: PathBuf, data: Vec<u8>) {
     execute!(terminal.backend_mut(), LeaveAlternateScreen).unwrap();
 }
 
-fn build_overview(name: &str, size: usize, ent: f64, format: &str) -> Vec<String> {
-    vec![
+fn build_overview(name: &str, size: usize, ent: f64, format: &str, info: &lang::FileInfo) -> Vec<String> {
+    let mut lines = vec![
         String::new(),
-        format!("  File    : {}", name),
-        format!("  Size    : {} bytes  ({:.1} KB)", size, size as f64 / 1024.0),
-        format!("  Format  : {}", format),
-        format!("  Entropy : {:.4}  — {}", ent, entropy::label(ent)),
-        String::new(),
-        "  ─────────────────────────────".to_string(),
-        "  Controls:".to_string(),
-        "    1-4              — switch tabs".to_string(),
-        "    ↑ ↓              — scroll line".to_string(),
-        "    PgUp / PgDn      — scroll page".to_string(),
-        "    Home             — scroll to top".to_string(),
-        "    q                — quit".to_string(),
-    ]
+        format!("  File       : {}", name),
+        format!("  Size       : {} bytes  ({:.1} KB)", size, size as f64 / 1024.0),
+        format!("  Format     : {}", format),
+        format!("  Language   : {}", info.language),
+        format!("  Entropy    : {:.4}  — {}", ent, entropy::label(ent)),
+    ];
+
+    if let Some(packer) = info.packer {
+        lines.push(format!("  Packer     : {} unpack first - upx -d <file>", packer));
+    }
+    if let Some(obf) = info.obfuscator {
+        lines.push(format!("  Obfuscator : {}", obf));
+    }
+
+    lines.push(String::new());
+    lines.push("  ─────────────────────────────".to_string());
+    lines.push("  Controls:".to_string());
+    lines.push("    1-5              — switch tabs".to_string());
+    lines.push("    ↑ ↓              — scroll line".to_string());
+    lines.push("    PgUp / PgDn      — scroll page".to_string());
+    lines.push("    Home             — scroll to top".to_string());
+    lines.push("    q                — quit".to_string());
+
+    lines
 }

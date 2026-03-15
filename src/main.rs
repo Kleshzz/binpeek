@@ -2,8 +2,10 @@ use clap::Parser;
 use std::path::PathBuf;
 
 mod detector;
+mod disasm;
 mod entropy;
 mod formats;
+mod lang;
 mod strings;
 mod ui;
 
