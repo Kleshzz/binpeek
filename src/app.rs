@@ -72,18 +72,23 @@ impl App {
         let p2 = progress.clone();
         let t_sections = std::thread::spawn(move || {
             { let mut p = p2.lock().unwrap(); p.current = "Parsing sections & imports..."; }
-            let r = if is_pe {
-                formats::pe_parse_all(&d2)
-            } else if is_elf {
-                formats::elf_parse_all(&d2)
-            } else if is_macho {
-                formats::macho_parse_all(&d2)
-            } else {
-                (
-                    vec!["  Not supported for this format".to_string()],
-                    vec!["  Not supported for this format".to_string()],
-                )
-            };
+            let r = std::panic::catch_unwind(|| {
+                if is_pe {
+                    formats::pe_parse_all(&d2)
+                } else if is_elf {
+                    formats::elf_parse_all(&d2)
+                } else if is_macho {
+                    formats::macho_parse_all(&d2)
+                } else {
+                    (
+                        vec!["  Not supported for this format".to_string()],
+                        vec!["  Not supported for this format".to_string()],
+                    )
+                }
+            }).unwrap_or_else(|_| (
+                vec!["  Parse error: binary appears malformed or heavily packed".to_string()],
+                vec!["  Import table unavailable".to_string()],
+            ));
             { let mut p = p2.lock().unwrap(); p.steps_done += 1; }
             r
         });
@@ -92,19 +97,21 @@ impl App {
         let p3 = progress.clone();
         let t_disasm = std::thread::spawn(move || {
             { let mut p = p3.lock().unwrap(); p.current = "Disassembling .text..."; }
-            let text = if is_pe {
-                formats::pe_text_section(&d3)
-            } else if is_elf {
-                formats::elf_text_section(&d3)
-            } else if is_macho {
-                formats::macho_text_section(&d3)
-            } else {
-                None
-            };
-            let r = match text {
-                Some((bytes, addr, is_64)) => disasm::disassemble(&bytes, is_64, addr),
-                None => vec!["  .text section not found or format not supported".to_string()],
-            };
+            let r = std::panic::catch_unwind(|| {
+                let text = if is_pe {
+                    formats::pe_text_section(&d3)
+                } else if is_elf {
+                    formats::elf_text_section(&d3)
+                } else if is_macho {
+                    formats::macho_text_section(&d3)
+                } else {
+                    None
+                };
+                match text {
+                    Some((bytes, addr, is_64)) => disasm::disassemble(&bytes, is_64, addr),
+                    None => vec!["  .text section not found or format not supported".to_string()],
+                }
+            }).unwrap_or_else(|_| vec!["  Disassembly failed: binary appears malformed".to_string()]);
             { let mut p = p3.lock().unwrap(); p.steps_done += 1; }
             r
         });

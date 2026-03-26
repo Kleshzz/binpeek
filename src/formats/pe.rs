@@ -36,10 +36,16 @@ pub fn pe_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>) {
 
             (sections, imports)
         }
-        Err(e) => (
-            vec![format!("Parse error: {}", e)],
-            vec![format!("Parse error: {}", e)],
-        ),
+        Err(e) => {
+            let msg = e.to_string();
+            let sections = vec![
+                "  Warning: PE parse error (malformed or packed binary)".to_string(),
+                format!("  Details: {}", msg),
+                String::new(),
+                "  Basic info may be unavailable. Try unpacking first (upx -d <file>).".to_string(),
+            ];
+            (sections, vec!["  Import table unavailable due to parse error.".to_string()])
+        }
     }
 }
 

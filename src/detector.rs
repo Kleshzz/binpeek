@@ -115,7 +115,7 @@ fn detect_by_magic(data: &[u8]) -> String {
         [0xCA, 0xFE, 0xBA, 0xBE]                     => {
             if data.len() >= 8 {
                 let nfat = u32::from_be_bytes([data[4], data[5], data[6], data[7]]);
-                if nfat >= 1 && nfat <= 10 {
+                if (1..=10).contains(&nfat) {
                     "Mach-O Fat Binary".to_string()
                 } else {
                     "Java .class".to_string()
