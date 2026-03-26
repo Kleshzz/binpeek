@@ -1,9 +1,7 @@
 pub fn detect_with_path(data: &[u8], path: &std::path::Path) -> String {
     let by_magic = detect_by_magic(data);
 
-    // Если magic bytes дали конкретный результат — доверяем им
     if by_magic != "Unknown" {
-        // Уточняем PE по расширению
         if by_magic == "PE (Windows Executable)" {
             if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                 return match ext.to_lowercase().as_str() {
@@ -19,7 +17,6 @@ pub fn detect_with_path(data: &[u8], path: &std::path::Path) -> String {
             }
         }
 
-        // Уточняем ZIP по расширению (ZIP используется как контейнер)
         if by_magic == "ZIP / JAR / APK / DOCX" {
             if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                 return match ext.to_lowercase().as_str() {
@@ -37,7 +34,6 @@ pub fn detect_with_path(data: &[u8], path: &std::path::Path) -> String {
             }
         }
 
-        // Уточняем OLE2 по расширению
         if by_magic == "MS Office (DOC / XLS / PPT)" {
             if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                 return match ext.to_lowercase().as_str() {
@@ -54,7 +50,6 @@ pub fn detect_with_path(data: &[u8], path: &std::path::Path) -> String {
         return by_magic;
     }
 
-    // Magic bytes неизвестны — пробуем по расширению
     if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
         return match ext.to_lowercase().as_str() {
             // Windows scripts

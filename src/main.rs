@@ -2,12 +2,8 @@ use clap::Parser;
 use std::path::PathBuf;
 
 mod app;
-mod detector;
-mod disasm;
-mod entropy;
+mod analysis;
 mod formats;
-mod lang;
-mod strings;
 mod ui;
 
 #[derive(Parser)]

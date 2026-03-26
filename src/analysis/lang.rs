@@ -53,6 +53,21 @@ fn detect_packer(text: &str) -> Option<&'static str> {
     if text.contains("VMProtect") {
         return Some("VMProtect");
     }
+    if text.contains("Enigma Virtual Box") {
+        return Some("Enigma Virtual Box");
+    }
+    if text.contains(".petite") || text.contains("Petite") {
+        return Some("Petite");
+    }
+    if text.contains("PESpin") {
+        return Some("PESpin");
+    }
+    if text.contains("MoleBox") {
+        return Some("MoleBox");
+    }
+    if text.contains("BoxedApp") {
+        return Some("BoxedApp SDK");
+    }
     None
 }
 
@@ -83,6 +98,18 @@ fn detect_obfuscator(text: &str) -> Option<&'static str> {
     if text.contains("Dotfuscator") {
         return Some("Dotfuscator (.NET)");
     }
+    if text.contains("BabelAttribute") || text.contains("Babel.Net") {
+        return Some("Babel.NET (.NET)");
+    }
+    if text.contains("Skater") {
+        return Some("Skater (.NET)");
+    }
+    if text.contains("Xenocode") {
+        return Some("Xenocode (.NET)");
+    }
+    if text.contains("Spices.Net") {
+        return Some("Spices.Net (.NET)");
+    }
     if text.contains("Enigma Protector") {
         return Some("Enigma Protector");
     }
@@ -92,16 +119,20 @@ fn detect_obfuscator(text: &str) -> Option<&'static str> {
     if text.contains("PyArmor") {
         return Some("Python (PyArmor protected)");
     }
+    if text.contains("__nuitka") || text.contains("nuitka") {
+        return Some("Nuitka (Compiler/Obfuscator)");
+    }
+    if text.contains(".pydata") || text.contains("PyInstaller") {
+        return Some("PyInstaller (Packer)");
+    }
     None
 }
 
 fn detect_language(text: &str) -> &'static str {
     // Go
-    if text.contains("Go build ID") || text.contains("go:buildid") {
+    if text.contains("Go build ID") || text.contains("go:buildid") || 
+       text.contains("runtime.gopanic") || text.contains("goroutine ") {
         return "Go";
-    }
-    if text.contains("runtime.gopanic") || text.contains("goroutine ") {
-        return "Go (obfuscated)";
     }
 
     // Rust
@@ -126,17 +157,11 @@ fn detect_language(text: &str) -> &'static str {
     }
 
     // Python
-    if text.contains("__nuitka") || text.contains("nuitka") {
-        return "Python (Nuitka)";
-    }
-    if text.contains("python3") || text.contains("Python 3") {
+    if text.contains("__nuitka") || text.contains("nuitka") || 
+       text.contains("python3") || text.contains("Python 3") || 
+       text.contains(".pydata") || text.contains("PyInstaller") || 
+       text.contains("Py_InitializeEx") {
         return "Python";
-    }
-    if text.contains(".pydata") || text.contains("PyInstaller") {
-        return "Python (PyInstaller)";
-    }
-    if text.contains("Py_InitializeEx") {
-        return "Python (embedded)";
     }
 
     // Electron
@@ -168,6 +193,61 @@ fn detect_language(text: &str) -> &'static str {
     }
     if text.contains("libstdc++") || text.contains("libgcc") {
         return "C++ (GCC/MinGW)";
+    }
+
+    // Zig
+    if text.contains("zig_panic") || text.contains("__zig_") {
+        return "Zig";
+    }
+
+    // Nim
+    if text.contains("nim_panic") || text.contains("nim_program_result") {
+        return "Nim";
+    }
+
+    // Haskell
+    if text.contains("GHC.Base") || text.contains("ghc-prim") {
+        return "Haskell (GHC)";
+    }
+
+    // D
+    if text.contains("_Dmain") || text.contains("_Dmodule_ref") {
+        return "D";
+    }
+
+    // Crystal
+    if text.contains("__crystal_main") || text.contains("crystal_init") {
+        return "Crystal";
+    }
+
+    // Ada
+    if text.contains("__gnat_") {
+        return "Ada (GNAT)";
+    }
+
+    // Fortran
+    if text.contains("_gfortran_") {
+        return "Fortran";
+    }
+
+    // Flutter / Dart
+    if text.contains("libflutter.so") || text.contains("FlutterMain") {
+        return "Dart (Flutter)";
+    }
+
+    // Unity
+    if text.contains("UnityPlayer.dll") || text.contains("UnityMain") {
+        return "C# (Unity Engine)";
+    }
+
+    // Ruby
+    if text.contains("ruby_init") || text.contains("libruby") {
+        return "Ruby (embedded)";
+    }
+
+    // Lua
+    if text.contains("lua_newstate") || text.contains("luaL_newstate") {
+        return "Lua (embedded)";
     }
 
     // C++ (Clang)
