@@ -99,11 +99,19 @@ binpeek archive.zip
 
 binpeek automatically detects:
 
-**Languages:** Go, Go (obfuscated), Rust, .NET / C#, Python, Python (PyInstaller), Delphi, AutoIt, Visual Basic 6, C++ (MSVC / GCC / Clang)
+**Languages:** Go, Rust, .NET / C#, Python, Zig, Nim, Haskell, D, Crystal, Swift, Delphi / Pascal, AutoIt, VB6, C / C++ (MSVC / GCC / Clang), Ada, Fortran, Ruby, Lua.
 
-**Packers:** UPX, MPRESS, NSPack, PECompact, ASPack, FSG, Themida, VMProtect
+**Frameworks:** Electron (Node.js), Flutter (Dart), Unity (C#).
 
-**Obfuscators:** Garble (Go), ConfuserEx, .NET Reactor, Eazfuscator, SmartAssembly, Dotfuscator, Enigma Protector, Obsidium
+**Packers:** UPX, MPRESS, NSPack, PECompact, ASPack, FSG, Themida, VMProtect, Enigma Virtual Box, MoleBox, Petite, PESpin, BoxedApp SDK.
+
+**Obfuscators:** Garble (Go), Nuitka, PyInstaller, ConfuserEx, Babel.NET, .NET Reactor, Eazfuscator, Skater, SmartAssembly, Dotfuscator, Xenocode, Spices.Net, Enigma Protector, Obsidium, PyArmor.
+
+## Contributing
+
+Contributions are welcome! Whether it's a bug fix, a new feature, or just a new file signature. 
+
+Check out [CONTRIBUTING.md](./CONTRIBUTING.md) to get started!
 
 ## Entropy guide
 
