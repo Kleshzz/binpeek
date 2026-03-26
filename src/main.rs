@@ -1,8 +1,8 @@
 use clap::Parser;
 use std::path::PathBuf;
 
-mod app;
 mod analysis;
+mod app;
 mod formats;
 mod ui;
 
@@ -51,9 +51,7 @@ fn main() {
     let p = progress.clone();
     let path = cli.file.clone();
 
-    let handle = std::thread::spawn(move || {
-        app::App::new(&path, &data, &p)
-    });
+    let handle = std::thread::spawn(move || app::App::new(&path, &data, &p));
 
     ui::run_loading(&progress, handle);
 }

@@ -4,7 +4,10 @@ pub fn macho_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>) {
     match Mach::parse(data) {
         Ok(Mach::Binary(macho)) => {
             let mut sections = vec![
-                format!("  Architecture : {}", if macho.is_64 { "64-bit" } else { "32-bit" }),
+                format!(
+                    "  Architecture : {}",
+                    if macho.is_64 { "64-bit" } else { "32-bit" }
+                ),
                 format!("  CPU Type     : 0x{:X}", macho.header.cputype),
                 format!("  File Type    : 0x{:X}", macho.header.filetype),
                 String::new(),
@@ -63,7 +66,10 @@ pub fn macho_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>) {
                 ));
             }
 
-            (sections, vec!["  Imports not available for Fat Binary (choose architecture)".to_string()])
+            (
+                sections,
+                vec!["  Imports not available for Fat Binary (choose architecture)".to_string()],
+            )
         }
         Err(e) => (
             vec![format!("  Parse error: {}", e)],
@@ -80,7 +86,7 @@ pub fn macho_text_section(data: &[u8]) -> Option<(Vec<u8>, u64, bool)> {
                     if let Ok(name) = section.name() {
                         if name == "__text" {
                             let offset = section.offset as usize;
-                            let size   = section.size as usize;
+                            let size = section.size as usize;
                             if offset + size <= data.len() {
                                 let bytes = data[offset..offset + size].to_vec();
                                 return Some((bytes, section.addr, macho.is_64));

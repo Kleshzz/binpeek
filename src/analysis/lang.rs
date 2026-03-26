@@ -1,6 +1,6 @@
 pub struct FileInfo {
     pub language: &'static str,
-    pub packer:   Option<&'static str>,
+    pub packer: Option<&'static str>,
     pub obfuscator: Option<&'static str>,
 }
 
@@ -8,7 +8,8 @@ pub fn detect(data: &[u8]) -> FileInfo {
     // Binary magic-checks before lossy conversion
     if data.len() >= 8 && data[..4] == [0xCA, 0xFE, 0xBA, 0xBE] {
         let nfat = u32::from_be_bytes([data[4], data[5], data[6], data[7]]);
-        if nfat > 10 { // This is Java .class, not a Mach-O fat binary
+        if nfat > 10 {
+            // This is Java .class, not a Mach-O fat binary
             return FileInfo {
                 language: "Java",
                 packer: None,
@@ -18,11 +19,15 @@ pub fn detect(data: &[u8]) -> FileInfo {
     }
 
     let text = String::from_utf8_lossy(data);
-    let packer     = detect_packer(&text);
+    let packer = detect_packer(&text);
     let obfuscator = detect_obfuscator(&text);
-    let language   = detect_language(&text);
+    let language = detect_language(&text);
 
-    FileInfo { language, packer, obfuscator }
+    FileInfo {
+        language,
+        packer,
+        obfuscator,
+    }
 }
 
 fn detect_packer(text: &str) -> Option<&'static str> {
@@ -73,7 +78,7 @@ fn detect_packer(text: &str) -> Option<&'static str> {
 
 fn detect_obfuscator(text: &str) -> Option<&'static str> {
     let has_go_runtime = text.contains("runtime.") && text.contains("goroutine");
-    let has_build_id   = text.contains("Go build ID") || text.contains("go:buildid");
+    let has_build_id = text.contains("Go build ID") || text.contains("go:buildid");
     let has_go_symbols = text.contains("main.main") || text.contains("main.init");
 
     if has_go_runtime && !has_build_id && !has_go_symbols {
@@ -130,8 +135,11 @@ fn detect_obfuscator(text: &str) -> Option<&'static str> {
 
 fn detect_language(text: &str) -> &'static str {
     // Go
-    if text.contains("Go build ID") || text.contains("go:buildid") || 
-       text.contains("runtime.gopanic") || text.contains("goroutine ") {
+    if text.contains("Go build ID")
+        || text.contains("go:buildid")
+        || text.contains("runtime.gopanic")
+        || text.contains("goroutine ")
+    {
         return "Go";
     }
 
@@ -157,10 +165,14 @@ fn detect_language(text: &str) -> &'static str {
     }
 
     // Python
-    if text.contains("__nuitka") || text.contains("nuitka") || 
-       text.contains("python3") || text.contains("Python 3") || 
-       text.contains(".pydata") || text.contains("PyInstaller") || 
-       text.contains("Py_InitializeEx") {
+    if text.contains("__nuitka")
+        || text.contains("nuitka")
+        || text.contains("python3")
+        || text.contains("Python 3")
+        || text.contains(".pydata")
+        || text.contains("PyInstaller")
+        || text.contains("Py_InitializeEx")
+    {
         return "Python";
     }
 

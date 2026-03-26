@@ -4,7 +4,10 @@ pub fn elf_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>) {
     match Elf::parse(data) {
         Ok(elf) => {
             let mut sections = vec![
-                format!("  Architecture : {}", if elf.is_64 { "64-bit" } else { "32-bit" }),
+                format!(
+                    "  Architecture : {}",
+                    if elf.is_64 { "64-bit" } else { "32-bit" }
+                ),
                 format!("  Little endian: {}", elf.little_endian),
                 format!("  Entry point  : 0x{:X}", elf.entry),
                 String::new(),
@@ -52,7 +55,7 @@ pub fn elf_text_section(data: &[u8]) -> Option<(Vec<u8>, u64, bool)> {
                 let name = elf.shdr_strtab.get_at(section.sh_name).unwrap_or("");
                 if name == ".text" {
                     let offset = section.sh_offset as usize;
-                    let size   = section.sh_size as usize;
+                    let size = section.sh_size as usize;
                     if offset + size <= data.len() {
                         let bytes = data[offset..offset + size].to_vec();
                         return Some((bytes, section.sh_addr, elf.is_64));

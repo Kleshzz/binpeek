@@ -23,6 +23,6 @@ pub fn label(entropy: f64) -> &'static str {
         0..=2 => "plain text / very low",
         3..=5 => "normal",
         6..=7 => "compressed or encrypted",
-        _     => "likely encrypted/packed",
+        _ => "likely encrypted/packed",
     }
 }

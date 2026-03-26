@@ -28,7 +28,10 @@ pub fn disassemble(data: &[u8], is_64: bool, base_addr: u64) -> Vec<String> {
 
     let mut lines = vec![
         format!("  Base address : 0x{:X}", base_addr),
-        format!("  Mode         : {}", if is_64 { "64-bit" } else { "32-bit" }),
+        format!(
+            "  Mode         : {}",
+            if is_64 { "64-bit" } else { "32-bit" }
+        ),
         format!(
             "  Section size : {:.1} KB total, showing first {:.1} KB ({} instructions)",
             total_kb,

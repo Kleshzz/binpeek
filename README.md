@@ -1,4 +1,4 @@
-# binpeek 🔍
+# binpeek
 
 A fast, terminal-based binary file inspector with a TUI interface.
 
