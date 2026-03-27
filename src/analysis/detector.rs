@@ -2,51 +2,48 @@ pub fn detect_with_path(data: &[u8], path: &std::path::Path) -> String {
     let by_magic = detect_by_magic(data);
 
     if by_magic != "Unknown" {
-        if by_magic == "PE (Windows Executable)" {
-            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-                return match ext.to_lowercase().as_str() {
-                    "dll" => "PE — DLL (Dynamic Library)".to_string(),
-                    "sys" => "PE — Kernel Driver (.sys)".to_string(),
-                    "scr" => "PE — Screensaver (.scr)".to_string(),
-                    "ocx" => "PE — ActiveX Control (.ocx)".to_string(),
-                    "cpl" => "PE — Control Panel (.cpl)".to_string(),
-                    "drv" => "PE — Driver (.drv)".to_string(),
-                    "efi" => "PE — EFI Executable".to_string(),
-                    _ => by_magic,
-                };
+        if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+            let ext = ext.to_lowercase();
+            match by_magic.as_str() {
+                "PE (Windows Executable)" => {
+                    return match ext.as_str() {
+                        "dll" => "PE — DLL (Dynamic Library)".to_string(),
+                        "sys" => "PE — Kernel Driver (.sys)".to_string(),
+                        "scr" => "PE — Screensaver (.scr)".to_string(),
+                        "ocx" => "PE — ActiveX Control (.ocx)".to_string(),
+                        "cpl" => "PE — Control Panel (.cpl)".to_string(),
+                        "drv" => "PE — Driver (.drv)".to_string(),
+                        "efi" => "PE — EFI Executable".to_string(),
+                        _ => by_magic,
+                    };
+                }
+                "ZIP / JAR / APK / DOCX" => {
+                    return match ext.as_str() {
+                        "jar" => "JAR (Java Archive)".to_string(),
+                        "apk" => "APK (Android Package)".to_string(),
+                        "docx" => "DOCX (Word Document)".to_string(),
+                        "xlsx" => "XLSX (Excel Spreadsheet)".to_string(),
+                        "pptx" => "PPTX (PowerPoint)".to_string(),
+                        "msix" => "MSIX (Windows Package)".to_string(),
+                        "appx" => "AppX (Windows Package)".to_string(),
+                        "epub" => "EPUB (eBook)".to_string(),
+                        "zip" => "ZIP Archive".to_string(),
+                        _ => by_magic,
+                    };
+                }
+                "MS Office (DOC / XLS / PPT)" => {
+                    return match ext.as_str() {
+                        "doc" => "DOC (Word Document)".to_string(),
+                        "xls" => "XLS (Excel Spreadsheet)".to_string(),
+                        "ppt" => "PPT (PowerPoint)".to_string(),
+                        "msi" => "MSI (Windows Installer)".to_string(),
+                        "msg" => "MSG (Outlook Email)".to_string(),
+                        _ => by_magic,
+                    };
+                }
+                _ => return by_magic,
             }
         }
-
-        if by_magic == "ZIP / JAR / APK / DOCX" {
-            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-                return match ext.to_lowercase().as_str() {
-                    "jar" => "JAR (Java Archive)".to_string(),
-                    "apk" => "APK (Android Package)".to_string(),
-                    "docx" => "DOCX (Word Document)".to_string(),
-                    "xlsx" => "XLSX (Excel Spreadsheet)".to_string(),
-                    "pptx" => "PPTX (PowerPoint)".to_string(),
-                    "msix" => "MSIX (Windows Package)".to_string(),
-                    "appx" => "AppX (Windows Package)".to_string(),
-                    "epub" => "EPUB (eBook)".to_string(),
-                    "zip" => "ZIP Archive".to_string(),
-                    _ => by_magic,
-                };
-            }
-        }
-
-        if by_magic == "MS Office (DOC / XLS / PPT)" {
-            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-                return match ext.to_lowercase().as_str() {
-                    "doc" => "DOC (Word Document)".to_string(),
-                    "xls" => "XLS (Excel Spreadsheet)".to_string(),
-                    "ppt" => "PPT (PowerPoint)".to_string(),
-                    "msi" => "MSI (Windows Installer)".to_string(),
-                    "msg" => "MSG (Outlook Email)".to_string(),
-                    _ => by_magic,
-                };
-            }
-        }
-
         return by_magic;
     }
 
@@ -107,6 +104,7 @@ fn detect_by_magic(data: &[u8]) -> String {
         | [0xCF, 0xFA, 0xED, 0xFE]
         | [0xFE, 0xED, 0xFA, 0xCE]
         | [0xFE, 0xED, 0xFA, 0xCF] => "Mach-O (macOS)".to_string(),
+
         [0xCA, 0xFE, 0xBA, 0xBE] => {
             if data.len() >= 8 {
                 let nfat = u32::from_be_bytes([data[4], data[5], data[6], data[7]]);

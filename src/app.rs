@@ -52,15 +52,18 @@ impl App {
         let is_pe = data_arc.len() >= 2 && data_arc[0] == 0x4D && data_arc[1] == 0x5A;
         let is_elf = data_arc.len() >= 4 && data_arc[..4] == [0x7F, 0x45, 0x4C, 0x46];
         let is_macho = data_arc.len() >= 4
-            && (data_arc[..4] == [0xFE, 0xED, 0xFA, 0xCE]
-                || data_arc[..4] == [0xFE, 0xED, 0xFA, 0xCF]
-                || data_arc[..4] == [0xCE, 0xFA, 0xED, 0xFE]
-                || data_arc[..4] == [0xCF, 0xFA, 0xED, 0xFE]
-                || data_arc[..4] == [0xCA, 0xFE, 0xBA, 0xBE]
-                || data_arc[..4] == [0xBE, 0xBA, 0xFE, 0xCA]);
+            && matches!(
+                &data_arc[..4],
+                [0xFE, 0xED, 0xFA, 0xCE]
+                    | [0xFE, 0xED, 0xFA, 0xCF]
+                    | [0xCE, 0xFA, 0xED, 0xFE]
+                    | [0xCF, 0xFA, 0xED, 0xFE]
+                    | [0xCA, 0xFE, 0xBA, 0xBE]
+                    | [0xBE, 0xBA, 0xFE, 0xCA]
+            );
 
-        let d1 = data_arc.clone();
-        let p1 = progress.clone();
+        // Spawn analysis threads
+        let (d1, p1) = (data_arc.clone(), progress.clone());
         let t_strings = std::thread::spawn(move || {
             {
                 let mut p = p1.lock().unwrap();
@@ -74,8 +77,7 @@ impl App {
             r
         });
 
-        let d2 = data_arc.clone();
-        let p2 = progress.clone();
+        let (d2, p2) = (data_arc.clone(), progress.clone());
         let t_sections = std::thread::spawn(move || {
             {
                 let mut p = p2.lock().unwrap();
@@ -108,8 +110,7 @@ impl App {
             r
         });
 
-        let d3 = data_arc.clone();
-        let p3 = progress.clone();
+        let (d3, p3) = (data_arc.clone(), progress.clone());
         let t_disasm = std::thread::spawn(move || {
             {
                 let mut p = p3.lock().unwrap();

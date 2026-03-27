@@ -2,37 +2,41 @@ name: "🔴 Bug Report"
 description: Report a bug to help us improve binpeek
 title: "[BUG]: <short-description>"
 labels: ["bug"]
+
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report a bug!
+        Thanks for taking the time to report a bug! Structured reports help us track and fix issues faster.
+
   - type: textarea
     id: what-happened
     attributes:
-      label: What happened?
-      description: Also tell us what you expected to happen.
+      label: Description
+      description: What happened and what did you expect instead?
       placeholder: Tell us what you see...
     validations:
       required: true
+
   - type: textarea
     id: reproduction-steps
     attributes:
       label: Reproduction Steps
-      description: Steps to reproduce the behavior.
+      description: How can we reproduce this?
       placeholder: |
-        1. Run 'binpeek <path>'
+        1. Run 'binpeek <path-to-file>'
         2. ...
     validations:
       required: true
+
   - type: input
     id: version
     attributes:
       label: Version
       description: e.g., v0.2.1
-      placeholder: v0.2.x
     validations:
       required: true
+
   - type: checkboxes
     id: environment
     attributes:
@@ -43,18 +47,22 @@ body:
         - label: macOS
     validations:
       required: true
+
   - type: input
     id: terminal
     attributes:
       label: Terminal Emulator
       placeholder: Windows Terminal, iTerm2, Kitty, etc.
+
   - type: textarea
     id: screenshots
     attributes:
       label: Screenshots
       description: Paste any screenshots that help explain the issue.
+
   - type: textarea
     id: additional-context
     attributes:
       label: Additional Context
-      description: Any other information or logs?
+      description: Any other information or logs (e.g., rustc version)?
+
