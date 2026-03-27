@@ -138,6 +138,16 @@ Check out [CONTRIBUTING.md](./CONTRIBUTING.md) to get started!
 
 **System:** Windows Shortcut (.lnk), Cabinet (.cab), Registry Hive, Minidump, SQLite
 
+## Credits
+
+`binpeek` wouldn't be possible without these amazing crates:
+
+- [ratatui](https://github.com/ratatui/ratatui) — terminal user interface
+- [capstone-rs](https://github.com/capstone-rust/capstone-rs) — disassembly engine
+- [goblin](https://github.com/m4b/goblin) — binary format parsing
+- [crossterm](https://github.com/crossterm-rs/crossterm) — cross-platform terminal manipulation
+- [clap](https://github.com/clap-rs/clap) — command line argument parsing
+
 ## License
 
 MIT
