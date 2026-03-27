@@ -14,3 +14,8 @@ capstone = "0.12"
 ratatui = "0.30"
 crossterm = "0.29"
 clap = { version = "4", features = ["derive"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true

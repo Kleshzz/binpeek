@@ -8,22 +8,20 @@ pub fn extract(data: &[u8], min_len: usize) -> Vec<String> {
     let mut current = Vec::new();
 
     for &byte in data {
-        if byte.is_ascii_graphic() || byte == b' ' {
+        if byte.is_ascii_graphic() || byte == b' ' || byte == b'\t' {
             current.push(byte);
         } else {
             if current.len() >= min_len {
-                if let Ok(s) = std::str::from_utf8(&current) {
-                    results.push(s.to_string());
-                }
+                results.push(String::from_utf8(std::mem::take(&mut current)).unwrap());
             }
             current.clear();
         }
     }
     if current.len() >= min_len {
-        if let Ok(s) = std::str::from_utf8(&current) {
-            results.push(s.to_string());
-        }
+        results.push(String::from_utf8(current).unwrap());
     }
 
+    results.dedup();
+    results.truncate(10_000);
     results
 }

@@ -23,7 +23,7 @@ impl LoadProgress {
     pub fn new() -> Progress {
         Arc::new(Mutex::new(Self {
             steps_done: 0,
-            total: 4,
+            total: 5,
             current: "Starting...",
         }))
     }
@@ -42,24 +42,22 @@ impl LoadProgress {
 }
 
 impl App {
-    pub fn new(path: &std::path::Path, data: &[u8], progress: &Progress) -> Self {
+    pub fn new(path: &std::path::Path, data_arc: Arc<Vec<u8>>, progress: &Progress) -> Self {
         let file_name = path
             .file_name()
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
 
-        let is_pe = data.len() >= 2 && data[0] == 0x4D && data[1] == 0x5A;
-        let is_elf = data.len() >= 4 && data[..4] == [0x7F, 0x45, 0x4C, 0x46];
-        let is_macho = data.len() >= 4
-            && (data[..4] == [0xFE, 0xED, 0xFA, 0xCE]
-                || data[..4] == [0xFE, 0xED, 0xFA, 0xCF]
-                || data[..4] == [0xCE, 0xFA, 0xED, 0xFE]
-                || data[..4] == [0xCF, 0xFA, 0xED, 0xFE]
-                || data[..4] == [0xCA, 0xFE, 0xBA, 0xBE]
-                || data[..4] == [0xBE, 0xBA, 0xFE, 0xCA]);
-
-        let data_arc = Arc::new(data.to_vec());
+        let is_pe = data_arc.len() >= 2 && data_arc[0] == 0x4D && data_arc[1] == 0x5A;
+        let is_elf = data_arc.len() >= 4 && data_arc[..4] == [0x7F, 0x45, 0x4C, 0x46];
+        let is_macho = data_arc.len() >= 4
+            && (data_arc[..4] == [0xFE, 0xED, 0xFA, 0xCE]
+                || data_arc[..4] == [0xFE, 0xED, 0xFA, 0xCF]
+                || data_arc[..4] == [0xCE, 0xFA, 0xED, 0xFE]
+                || data_arc[..4] == [0xCF, 0xFA, 0xED, 0xFE]
+                || data_arc[..4] == [0xCA, 0xFE, 0xBA, 0xBE]
+                || data_arc[..4] == [0xBE, 0xBA, 0xFE, 0xCA]);
 
         let d1 = data_arc.clone();
         let p1 = progress.clone();
@@ -151,13 +149,11 @@ impl App {
         {
             let mut p = progress.lock().unwrap();
             p.steps_done += 1;
-            p.current = "Finishing...";
         }
 
         let strings = t_strings.join().unwrap();
         let (sections, imports) = t_sections.join().unwrap();
         let disasm = t_disasm.join().unwrap();
-
         {
             let mut p = progress.lock().unwrap();
             p.steps_done = p.total;

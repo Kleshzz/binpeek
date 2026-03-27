@@ -134,7 +134,7 @@ fn detect_by_magic(data: &[u8]) -> String {
         [0x42, 0x5A, 0x68, ..] => "BZIP2".to_string(),
         [0xFD, 0x37, 0x7A, 0x58] => "XZ Archive".to_string(),
         [0x37, 0x7A, 0xBC, 0xAF] => "7-Zip Archive".to_string(),
-        [0x1F, 0x9D, ..] => "TAR (compressed)".to_string(),
+        [0x1F, 0x9D, ..] => "LZW (compressed)".to_string(),
 
         // Images
         [0xFF, 0xD8, 0xFF, ..] => "JPEG Image".to_string(),
@@ -142,7 +142,6 @@ fn detect_by_magic(data: &[u8]) -> String {
         [0x47, 0x49, 0x46, 0x38] => "GIF Image".to_string(),
         [0x42, 0x4D, ..] => "BMP Image".to_string(),
         [0x49, 0x49, 0x2A, 0x00] | [0x4D, 0x4D, 0x00, 0x2A] => "TIFF Image".to_string(),
-        [0x57, 0x45, 0x42, 0x50] => "WebP Image".to_string(),
 
         // Documents
         [0x25, 0x50, 0x44, 0x46] => "PDF Document".to_string(),
@@ -153,8 +152,19 @@ fn detect_by_magic(data: &[u8]) -> String {
         [0x49, 0x44, 0x33, ..] => "MP3 Audio".to_string(),
         [0x4F, 0x67, 0x67, 0x53] => "OGG Audio".to_string(),
         [0x66, 0x4C, 0x61, 0x43] => "FLAC Audio".to_string(),
-        [0x52, 0x49, 0x46, 0x46] => "RIFF (WAV / AVI)".to_string(),
-
+        [0x52, 0x49, 0x46, 0x46] => {
+            if data.len() >= 12 {
+                match &data[8..12] {
+                    b"WAVE" => "WAV Audio".to_string(),
+                    b"AVI " => "AVI Video".to_string(),
+                    b"WEBP" => "WebP Image".to_string(),
+                    b"ACON" => "ANI Cursor".to_string(),
+                    _ => "RIFF Container".to_string(),
+                }
+            } else {
+                "RIFF Container".to_string()
+            }
+        }
         // Video
 
         // System / Windows

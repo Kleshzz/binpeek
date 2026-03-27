@@ -19,10 +19,13 @@ pub fn calculate(data: &[u8]) -> f64 {
 }
 
 pub fn label(entropy: f64) -> &'static str {
-    match entropy as u32 {
-        0..=2 => "plain text / very low",
-        3..=5 => "normal",
-        6..=7 => "compressed or encrypted",
-        _ => "likely encrypted/packed",
+    if entropy <= 2.0 {
+        "plain text / very low"
+    } else if entropy <= 5.0 {
+        "normal"
+    } else if entropy <= 7.0 {
+        "compressed or encrypted"
+    } else {
+        "likely encrypted/packed"
     }
 }

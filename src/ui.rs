@@ -14,8 +14,17 @@ use ratatui::{
 };
 use std::thread::JoinHandle;
 
+struct TerminalGuard;
+impl Drop for TerminalGuard {
+    fn drop(&mut self) {
+        let _ = crossterm::terminal::disable_raw_mode();
+        let _ = crossterm::execute!(std::io::stdout(), crossterm::terminal::LeaveAlternateScreen);
+    }
+}
+
 pub fn run_loading(progress: &Progress, handle: JoinHandle<crate::app::App>) {
     enable_raw_mode().unwrap();
+    let _guard = TerminalGuard;
     let mut stdout = std::io::stdout();
     execute!(stdout, EnterAlternateScreen).unwrap();
     let backend = CrosstermBackend::new(stdout);
@@ -33,8 +42,7 @@ pub fn run_loading(progress: &Progress, handle: JoinHandle<crate::app::App>) {
 
     loop {
         if let Ok(app) = rx.try_recv() {
-            disable_raw_mode().unwrap();
-            execute!(terminal.backend_mut(), LeaveAlternateScreen).unwrap();
+            drop(_guard);
             run(app);
             return;
         }
@@ -136,6 +144,7 @@ pub fn run_loading(progress: &Progress, handle: JoinHandle<crate::app::App>) {
 
 pub fn run(mut app: App) {
     enable_raw_mode().unwrap();
+    let _guard = TerminalGuard;
     let mut stdout = std::io::stdout();
     execute!(stdout, EnterAlternateScreen).unwrap();
     let backend = CrosstermBackend::new(stdout);
@@ -180,7 +189,11 @@ pub fn run(mut app: App) {
                     .style(Style::default().fg(Color::Gray));
                 f.render_widget(tabs_widget, chunks[0]);
 
-                let scroll_info = format!(" {}/{} ", app.scroll + 1, app.current_tab().len());
+                let scroll_info = if app.current_tab().is_empty() {
+                    " 0/0 ".to_string()
+                } else {
+                    format!(" {}/{} ", app.scroll + 1, app.current_tab().len())
+                };
                 let content_block = Block::default()
                     .borders(Borders::ALL)
                     .title(format!(" {} ", TAB_NAMES[app.tab]))

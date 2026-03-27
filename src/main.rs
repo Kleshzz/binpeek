@@ -14,6 +14,8 @@ pub struct Cli {
     pub file: PathBuf,
 }
 
+use std::sync::Arc;
+
 fn main() {
     let cli = Cli::parse();
 
@@ -47,11 +49,13 @@ fn main() {
         );
     }
 
+    let data_arc = Arc::new(data);
     let progress = app::LoadProgress::new();
     let p = progress.clone();
     let path = cli.file.clone();
 
-    let handle = std::thread::spawn(move || app::App::new(&path, &data, &p));
+    let d_arc = data_arc.clone();
+    let handle = std::thread::spawn(move || app::App::new(&path, d_arc, &p));
 
     ui::run_loading(&progress, handle);
 }
