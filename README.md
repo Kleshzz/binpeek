@@ -1,6 +1,18 @@
 # binpeek
 
+```text
+  _     _                      _    
+ | |__ (_)_ __  _ __   ___  ___| | __
+ | '_ \| | '_ \| '_ \ / _ \/ _ \ |/ /
+ | |_) | | | | | |_) |  __/  __/   < 
+ |_.__/|_|_| |_| .__/ \___|\___|_|\_\
+               |_|                   
+```
+
+
 [![Crates.io](https://img.shields.io/crates/v/binpeek.svg)](https://crates.io/crates/binpeek)
+[![Downloads](https://img.shields.io/crates/d/binpeek?style=flat-square&color=blue)](https://crates.io/crates/binpeek)
+[![Stars](https://img.shields.io/github/stars/Kleshzz/binpeek?style=flat-square&color=yellow)](https://github.com/Kleshzz/binpeek/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A fast, terminal-based binary file inspector with a TUI interface.
@@ -8,6 +20,15 @@ A fast, terminal-based binary file inspector with a TUI interface.
 Supports **PE** (Windows `.exe` / `.dll`), **ELF** (Linux), **Mach-O** (macOS) and [40+ other formats](#supported-formats).
 
 ![binpeek demo](https://raw.githubusercontent.com/Kleshzz/binpeek/main/assets/demo.png)
+
+## Why binpeek?
+
+Most hex editors just show you bytes. **binpeek** tells you what they actually *are*:
+
+- **Instant Identification** — Detects 20+ languages (Go, Rust, Swift, Zig, etc.) and deep framework info.
+- **Packer Detection** — Automatically identifies UPX, Themida, VMProtect and 15+ other packers/obfuscators.
+- **Visual Entropy** — See at a glance if parts of the file are compressed or encrypted.
+- **Zero Bloat** — Single binary. No Python, no JVM, no external dependencies.
 
 ## Features
 
@@ -82,11 +103,11 @@ binpeek archive.zip
 
 | Key | Action |
 |-----|--------|
-| `1` `2` `3` `4` `5` | Switch tabs |
-| `↑` `↓` | Scroll one line |
-| `PgUp` `PgDn` | Scroll one page |
-| `Home` | Scroll to top |
-| `q` | Quit |
+| <kbd>1</kbd> .. <kbd>5</kbd> | Switch Tabs |
+| <kbd>↑</kbd> <kbd>↓</kbd> | Scroll one line |
+| <kbd>PgUp</kbd> <kbd>PgDn</kbd> | Scroll one page |
+| <kbd>Home</kbd> | Scroll to top |
+| <kbd>q</kbd> | Quit application |
 
 ## Tabs
 
@@ -127,6 +148,9 @@ Check out [CONTRIBUTING.md](./CONTRIBUTING.md) to get started!
 
 ## Supported formats
 
+<details>
+<summary><b>Click to view 40+ supported formats</b></summary>
+
 **Executables:** PE (.exe, .dll), ELF, Mach-O, Java .class, WebAssembly
 
 **Archives:** ZIP / JAR / APK, RAR, GZIP, BZIP2, XZ, 7-Zip, TAR
@@ -140,6 +164,8 @@ Check out [CONTRIBUTING.md](./CONTRIBUTING.md) to get started!
 **Video:** MP4 / MOV
 
 **System:** Windows Shortcut (.lnk), Cabinet (.cab), Registry Hive, Minidump, SQLite
+
+</details>
 
 ## Credits
 
