@@ -3,3 +3,5 @@
 *.toml text eol=lf
 *.yml text eol=lf
 *.md text eol=lf
+*.html text eol=lf
+*.css text eol=lf

@@ -8,6 +8,8 @@ keywords = ["binary", "inspector", "pe", "elf", "tui"]
 categories = ["command-line-utilities", "development-tools"]
 authors = ["Kleshzz <https://github.com/Kleshzz>"]
 repository = "https://github.com/Kleshzz/binpeek"
+homepage = "https://kleshzz.github.io/binpeek"
+exclude = ["/docs", ".github"]
 rust-version = "1.81.0"
 
 [dependencies]

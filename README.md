@@ -1,5 +1,8 @@
 # binpeek
 
+[![Crates.io](https://img.shields.io/crates/v/binpeek.svg)](https://crates.io/crates/binpeek)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A fast, terminal-based binary file inspector with a TUI interface.
 
 Supports **PE** (Windows `.exe` / `.dll`), **ELF** (Linux), **Mach-O** (macOS) and [40+ other formats](#supported-formats).
