@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>binpeek — Terminal-based Binary Inspector</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <meta name="description" content="A fast, terminal-based binary file inspector for PE, ELF, and Mach-O. Minimal, sleek, and feature-rich.">
+    <!-- Meta tags for better SEO -->
+    <meta property="og:title" content="binpeek">
+    <meta property="og:description" content="Fast terminal binary inspector with TUI.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>binpeek</h1>
+            <p>A fast, terminal-based binary file inspector with a focus on UI and performance.</p>
+        </header>
+
+        <section class="demo">
+            <div class="terminal-mock shadow">
+                <div class="terminal-header">
+                    <span class="dot red"></span>
+                    <span class="dot yellow"></span>
+                    <span class="dot green"></span>
+                </div>
+                <div class="line highlight">binpeek — suspicious.exe</div>
+                <div class="line"> Overview (16)  |  Sections (16)  |  Imports (47)  |  Strings (10002) </div>
+                <div class="line">-----------------------------------------------------------------------</div>
+                <div class="line"> Overview -------------------------------------------------------------</div>
+                <div class="line"></div>
+                <div class="line"> File       : suspicious.exe</div>
+                <div class="line"> Size       : 7546880 bytes  (7370.0 KB)</div>
+                <div class="line"> Format     : PE (Windows Executable)</div>
+                <div class="line highlight"> Language   : Go (obfuscated)</div>
+                <div class="line info"> Entropy    : 6.1221 — compressed or encrypted</div>
+                <div class="line"> Obfuscator : Garble (Go obfuscator)</div>
+                <div class="line"></div>
+                <div class="line"> ---------------------------------------</div>
+                <div class="line info"> [1-5] Tabs  [↑↓] Scroll  [PgUp/PgDn] Page  [Home] Top  [q] Quit</div>
+                <div class="line " style="text-align: right;">1/16</div>
+            </div>
+        </section>
+
+        <section id="features">
+            <h2>Key Features</h2>
+            <div class="cards">
+                <div class="card">
+                    <h3>Fast Analysis</h3>
+                    <p>Instant analysis of entropy and file format signatures. No waiting for indexing.</p>
+                </div>
+                <div class="card">
+                    <h3>Multi-Format</h3>
+                    <p>Full support for PE, ELF, and Mach-O binaries on all major architectures.</p>
+                </div>
+                <div class="card">
+                    <h3>String Extraction</h3>
+                    <p>Efficiently extracts ASCII strings with smart filtering and deduplication.</p>
+                </div>
+                <div class="card">
+                    <h3>Disassembly</h3>
+                    <p>Built-in disassembly for .text sections via the Capstone engine.</p>
+                </div>
+                <div class="card">
+                    <h3>Packer Detection</h3>
+                    <p>Identifies packers like UPX and obfuscators like Garble or ConfuserEx.</p>
+                </div>
+                <div class="card">
+                    <h3>Zero Dependency</h3>
+                    <p>Single statically-linked binary. No need for Python, Node, or Java.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="install">
+            <h2>Installation</h2>
+            
+            <p><strong>Windows (PowerShell)</strong></p>
+            <div class="code-block">
+                <span class="copy-status">Copied!</span>
+                <button class="copy-btn" onclick="copyCode(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                <code>iwr -useb https://github.com/Kleshzz/binpeek/releases/latest/download/binpeek-windows-x64.exe -OutFile binpeek.exe</code>
+            </div>
+
+            <p><strong>Linux / macOS (Bash)</strong></p>
+            <div class="code-block">
+                <span class="copy-status">Copied!</span>
+                <button class="copy-btn" onclick="copyCode(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                <code>curl -L https://github.com/Kleshzz/binpeek/releases/latest/download/binpeek-linux-x64 -o binpeek && chmod +x binpeek</code>
+            </div>
+
+            <p><strong>Via Cargo (All platforms)</strong></p>
+            <div class="code-block">
+                <span class="copy-status">Copied!</span>
+                <button class="copy-btn" onclick="copyCode(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                <code>cargo install binpeek</code>
+            </div>
+        </section>
+
+        <section id="usage">
+          <h2>Quick Usage</h2>
+          
+          <p><strong>Windows</strong></p>
+          <div class="code-block">
+                <span class="copy-status">Copied!</span>
+                <button class="copy-btn" onclick="copyCode(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                <code>.\binpeek.exe target.exe</code>
+          </div>
+
+          <p><strong>Linux / macOS</strong></p>
+          <div class="code-block">
+                <span class="copy-status">Copied!</span>
+                <button class="copy-btn" onclick="copyCode(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                <code>./binpeek target.bin</code>
+          </div>
+
+          <p>Use keys <strong>1-5</strong> to switch tabs and <strong>Arrow keys</strong> for scrolling.</p>
+      </section>
+
+      <section id="credits">
+        <h2>Built with</h2>
+        <p>This project is made possible thanks to these amazing Rust crates: <strong>ratatui</strong>, <strong>capstone-rs</strong>, <strong>goblin</strong>, <strong>crossterm</strong>, and <strong>clap</strong>.</p>
+    </section>
+
+        <footer>
+            <p>&copy; 2026 Kleshzz. Licensed under MIT. <a href="https://github.com/Kleshzz/binpeek">View on GitHub</a></p>
+        </footer>
+    </div>
+
+    <script>
+        function copyCode(btn) {
+            const code = btn.parentElement.querySelector('code').innerText;
+            const status = btn.parentElement.querySelector('.copy-status');
+            navigator.clipboard.writeText(code).then(() => {
+                status.classList.add('visible');
+                setTimeout(() => {
+                    status.classList.remove('visible');
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
+

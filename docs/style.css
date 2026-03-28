@@ -1,0 +1,229 @@
+/* Minimalist Compiled CSS with Smaller Icon */
+body {
+    background-color: #121212;
+    color: #e0e0e0;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+header {
+    text-align: center;
+    padding: 4rem 0 2rem;
+}
+
+header h1 {
+    font-family: "JetBrains Mono", "Roboto Mono", monospace;
+    font-size: 3.5rem;
+    letter-spacing: -2px;
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+header p {
+    color: #a0a0a0;
+    font-size: 1.2rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.terminal-mock {
+    background-color: #1a1a1a;
+    border: 1px solid #3d3d3d;
+    border-radius: 8px;
+    padding: 1.5rem;
+    font-family: "JetBrains Mono", "Roboto Mono", monospace;
+    font-size: 0.9rem;
+    margin: 2rem 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    line-height: 1.3;
+}
+
+.terminal-mock .terminal-header {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1rem;
+}
+
+.terminal-mock .terminal-header .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.terminal-mock .terminal-header .dot.red {
+    background: #ff5f56;
+}
+
+.terminal-mock .terminal-header .dot.yellow {
+    background: #ffbd2e;
+}
+
+.terminal-mock .terminal-header .dot.green {
+    background: #27c93f;
+}
+
+.terminal-mock .line {
+    margin-bottom: 0.1rem;
+    white-space: pre-wrap;
+}
+
+.terminal-mock .line.command {
+    color: #81a1c1;
+}
+
+.terminal-mock .line.info {
+    color: #a0a0a0;
+}
+
+.terminal-mock .line.highlight {
+    color: #2db9cf;
+}
+
+section {
+    margin: 4rem 0;
+}
+
+section h2 {
+    font-family: "JetBrains Mono", "Roboto Mono", monospace;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+section h2::after {
+    content: "";
+    flex-grow: 1;
+    height: 1px;
+    background: linear-gradient(90deg, #3d3d3d, transparent);
+}
+
+.code-block {
+    position: relative;
+    background: #000000;
+    padding: 1.2rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+    border: 1px solid #252525;
+}
+
+.code-block code {
+    font-family: "JetBrains Mono", "Roboto Mono", monospace;
+    color: #d8dee9;
+    font-size: 0.9rem;
+}
+
+.code-block .copy-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: transparent;
+    color: #a0a0a0;
+    border: none;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, color 0.2s;
+    padding: 0;
+    z-index: 2;
+}
+
+.code-block .copy-btn svg {
+    width: 100%;
+    height: 100%;
+}
+
+.code-block .copy-btn:hover {
+    color: #fff;
+}
+
+.code-block:hover .copy-btn {
+    opacity: 1;
+}
+
+.code-block .copy-status {
+    position: absolute;
+    top: 14px;
+    right: 44px;
+    font-size: 11px;
+    color: #27c93f;
+    font-family: "Inter", sans-serif;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.code-block .copy-status.visible {
+    opacity: 1;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.cards .card {
+    background: #1a1a1a;
+    padding: 1.5rem;
+    border-radius: 6px;
+    border: 1px solid #3d3d3d;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.cards .card:hover {
+    transform: translateY(-4px);
+    border-color: #2db9cf;
+}
+
+.cards .card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: #ffffff;
+}
+
+.cards .card p {
+    font-size: 0.9rem;
+    color: #a0a0a0;
+}
+
+footer {
+    text-align: center;
+    padding: 4rem 0;
+    color: #a0a0a0;
+    font-size: 0.8rem;
+    border-top: 1px solid #1a1a1a;
+}
+
+footer a {
+    color: #e0e0e0;
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+    header h1 {
+        font-size: 2.5rem;
+    }
+}
