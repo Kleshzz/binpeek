@@ -93,8 +93,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install Rust MSRV (1.85.0)
-        uses: dtolnay/rust-toolchain@1.85.0
+      - name: Install Rust MSRV (1.88.0)
+        uses: dtolnay/rust-toolchain@1.88.0
 
       - name: Cache cargo
         uses: actions/cache@v5
