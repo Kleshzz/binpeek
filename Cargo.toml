@@ -17,9 +17,11 @@ goblin = "0.10.5"
 capstone = "0.14"
 ratatui = "0.30"
 crossterm = "0.29"
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"] }
 
 [profile.release]
 opt-level = 3
 lto = true
 strip = true
+codegen-units = 1
+panic = "abort"
