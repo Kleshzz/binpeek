@@ -15,9 +15,9 @@ rust-version = "1.81.0"
 [dependencies]
 goblin = "0.10.5"
 capstone = "0.14"
-ratatui = "0.30"
 crossterm = "0.29"
 clap = { version = "4.5", features = ["derive"] }
+ratatui = { version = "0.30", default-features = false, features = ["crossterm"] }
 
 [profile.release]
 opt-level = 3
