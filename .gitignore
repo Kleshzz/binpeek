@@ -1,7 +1,23 @@
+# Rust
 /target
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Website will be moved to another repo
+/docs
+
+# Other
 *.zip
 *.rar
 *.7z
-
-#website will be moved to another repo
-/docs
+*.tar.*
