@@ -8,3 +8,6 @@
 *.css text
 
 *.png binary
+
+assets/ export-ignore
+CONTRIBUTING.md export-ignore
