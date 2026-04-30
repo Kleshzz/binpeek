@@ -1,7 +1,10 @@
 * text=auto eol=lf
-*.rs text eol=lf
-*.toml text eol=lf
-*.yml text eol=lf
-*.md text eol=lf
-*.html text eol=lf
-*.css text eol=lf
+
+*.rs text
+*.toml text
+*.yml text
+*.md text
+*.html text
+*.css text
+
+*.png binary

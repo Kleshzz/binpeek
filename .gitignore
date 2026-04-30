@@ -2,3 +2,6 @@
 *.zip
 *.rar
 *.7z
+
+#website will be moved to another repo
+/docs
