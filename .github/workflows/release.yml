@@ -14,6 +14,7 @@ jobs:
     outputs:
       sha: ${{ steps.push.outputs.sha }}
     steps:
+      - uses: dtolnay/rust-toolchain@stable
       - uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -168,6 +169,4 @@ jobs:
           ref: ${{ needs.version-bump.outputs.sha }}
       - uses: dtolnay/rust-toolchain@stable
       - name: Publish
-        run: cargo publish --allow-dirty --token ${{ secrets.CARGO_TOKEN }}
-
-
+        run: cargo publish --token ${{ secrets.CARGO_TOKEN }}
