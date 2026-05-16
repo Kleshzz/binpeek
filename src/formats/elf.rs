@@ -32,10 +32,10 @@ pub fn elf_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>) {
             }
             imports.push("  [Symbols]".to_string());
             for sym in elf.syms.iter() {
-                if let Some(name) = elf.strtab.get_at(sym.st_name) {
-                    if !name.is_empty() {
-                        imports.push(format!("    0x{:08X}  {}", sym.st_value, name));
-                    }
+                if let Some(name) = elf.strtab.get_at(sym.st_name)
+                    && !name.is_empty()
+                {
+                    imports.push(format!("    0x{:08X}  {}", sym.st_value, name));
                 }
             }
 

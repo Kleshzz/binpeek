@@ -83,14 +83,14 @@ pub fn macho_text_section(data: &[u8]) -> Option<(Vec<u8>, u64, bool)> {
         Ok(Mach::Binary(macho)) => {
             for segment in &macho.segments {
                 for (section, _) in &segment.sections().unwrap_or_default() {
-                    if let Ok(name) = section.name() {
-                        if name == "__text" {
-                            let offset = section.offset as usize;
-                            let size = section.size as usize;
-                            if offset + size <= data.len() {
-                                let bytes = data[offset..offset + size].to_vec();
-                                return Some((bytes, section.addr, macho.is_64));
-                            }
+                    if let Ok(name) = section.name()
+                        && name == "__text"
+                    {
+                        let offset = section.offset as usize;
+                        let size = section.size as usize;
+                        if offset + size <= data.len() {
+                            let bytes = data[offset..offset + size].to_vec();
+                            return Some((bytes, section.addr, macho.is_64));
                         }
                     }
                 }

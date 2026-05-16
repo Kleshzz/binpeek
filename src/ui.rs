@@ -223,6 +223,7 @@ pub fn run(mut app: App) {
             })
             .unwrap();
 
+        #[allow(clippy::collapsible_if)]
         if event::poll(std::time::Duration::from_millis(100)).unwrap() {
             if let Event::Key(key) = event::read().unwrap() {
                 if key.kind == KeyEventKind::Release {
