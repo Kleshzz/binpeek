@@ -119,6 +119,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: Kleshzz/changelog-writer@v1
+        id: changelog
+        with:
+          tag: ${{ github.ref_name }}
 
       - name: Download all artifacts
         uses: actions/download-artifact@v8
@@ -137,6 +144,8 @@ jobs:
             artifacts/binpeek-macos-x64/binpeek-macos-x64
             artifacts/binpeek-macos-arm64/binpeek-macos-arm64
           body: |
+            ${{ steps.changelog.outputs.changelog }}
+
             ## Install
 
             **Windows**
@@ -156,8 +165,6 @@ jobs:
             ```bash
             cargo install binpeek
             ```
-            
-          generate_release_notes: true
 
   publish:
     name: Publish to crates.io
