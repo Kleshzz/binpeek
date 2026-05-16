@@ -18,6 +18,7 @@ pub fn detect(data: &[u8]) -> FileInfo {
         }
     }
 
+    let data = &data[..data.len().min(2_000_000)];
     let text = String::from_utf8_lossy(data);
     let packer = detect_packer(&text);
     let obfuscator = detect_obfuscator(&text);

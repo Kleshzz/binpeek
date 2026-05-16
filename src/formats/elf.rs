@@ -1,6 +1,6 @@
 use goblin::elf::Elf;
 
-pub fn elf_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>) {
+pub fn elf_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>, Option<(Vec<u8>, u64, bool)>) {
     match Elf::parse(data) {
         Ok(elf) => {
             let mut sections = vec![
@@ -39,18 +39,7 @@ pub fn elf_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>) {
                 }
             }
 
-            (sections, imports)
-        }
-        Err(e) => (
-            vec![format!("Parse error: {}", e)],
-            vec![format!("Parse error: {}", e)],
-        ),
-    }
-}
-
-pub fn elf_text_section(data: &[u8]) -> Option<(Vec<u8>, u64, bool)> {
-    match Elf::parse(data) {
-        Ok(elf) => {
+            let mut text_section = None;
             for section in &elf.section_headers {
                 let name = elf.shdr_strtab.get_at(section.sh_name).unwrap_or("");
                 if name == ".text" {
@@ -58,13 +47,19 @@ pub fn elf_text_section(data: &[u8]) -> Option<(Vec<u8>, u64, bool)> {
                     let size = section.sh_size as usize;
                     if offset + size <= data.len() {
                         let bytes = data[offset..offset + size].to_vec();
-                        return Some((bytes, section.sh_addr, elf.is_64));
+                        text_section = Some((bytes, section.sh_addr, elf.is_64));
+                        break;
                     }
                 }
             }
-            None
+
+            (sections, imports, text_section)
         }
-        Err(_) => None,
+        Err(e) => (
+            vec![format!("Parse error: {}", e)],
+            vec![format!("Parse error: {}", e)],
+            None,
+        ),
     }
 }
 

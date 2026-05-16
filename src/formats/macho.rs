@@ -1,6 +1,6 @@
 use goblin::mach::Mach;
 
-pub fn macho_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>) {
+pub fn macho_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>, Option<(Vec<u8>, u64, bool)>) {
     match Mach::parse(data) {
         Ok(Mach::Binary(macho)) => {
             let mut sections = vec![
@@ -49,7 +49,27 @@ pub fn macho_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>) {
                 }
             }
 
-            (sections, imports)
+            let mut text_section = None;
+            for segment in &macho.segments {
+                for (section, _) in &segment.sections().unwrap_or_default() {
+                    if let Ok(name) = section.name()
+                        && name == "__text"
+                    {
+                        let offset = section.offset as usize;
+                        let size = section.size as usize;
+                        if offset + size <= data.len() {
+                            let bytes = data[offset..offset + size].to_vec();
+                            text_section = Some((bytes, section.addr, macho.is_64));
+                            break;
+                        }
+                    }
+                }
+                if text_section.is_some() {
+                    break;
+                }
+            }
+
+            (sections, imports, text_section)
         }
         Ok(Mach::Fat(fat)) => {
             let arches = fat.arches().unwrap_or_default();
@@ -69,34 +89,13 @@ pub fn macho_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>) {
             (
                 sections,
                 vec!["  Imports not available for Fat Binary (choose architecture)".to_string()],
+                None,
             )
         }
         Err(e) => (
             vec![format!("  Parse error: {}", e)],
             vec![format!("  Parse error: {}", e)],
+            None,
         ),
-    }
-}
-
-pub fn macho_text_section(data: &[u8]) -> Option<(Vec<u8>, u64, bool)> {
-    match Mach::parse(data) {
-        Ok(Mach::Binary(macho)) => {
-            for segment in &macho.segments {
-                for (section, _) in &segment.sections().unwrap_or_default() {
-                    if let Ok(name) = section.name()
-                        && name == "__text"
-                    {
-                        let offset = section.offset as usize;
-                        let size = section.size as usize;
-                        if offset + size <= data.len() {
-                            let bytes = data[offset..offset + size].to_vec();
-                            return Some((bytes, section.addr, macho.is_64));
-                        }
-                    }
-                }
-            }
-            None
-        }
-        _ => None,
     }
 }

@@ -207,7 +207,7 @@ pub fn run(mut app: App) {
                 let items: Vec<ListItem> = app
                     .current_tab()
                     .iter()
-                    .skip(app.scroll as usize)
+                    .skip(app.scroll)
                     .take(visible_height)
                     .map(|l| ListItem::new(l.as_str()))
                     .collect();
