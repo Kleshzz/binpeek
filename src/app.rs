@@ -1,6 +1,9 @@
-use crate::analysis::{detector, disasm, entropy, lang, strings};
-use crate::formats;
 use std::sync::{Arc, Mutex};
+
+use crate::{
+    analysis::{detector, disasm, entropy, lang, strings},
+    formats,
+};
 
 pub const TAB_NAMES: [&str; 5] = ["Overview", "Sections", "Imports", "Strings", "Disasm"];
 

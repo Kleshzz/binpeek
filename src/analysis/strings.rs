@@ -66,9 +66,10 @@ mod tests {
     fn no_control_bytes_in_output() {
         let data: Vec<u8> = (0u8..=255).collect();
         for s in extract(&data, 1) {
-            assert!(s
-                .chars()
-                .all(|c| c.is_ascii_graphic() || c == ' ' || c == '\t'));
+            assert!(
+                s.chars()
+                    .all(|c| c.is_ascii_graphic() || c == ' ' || c == '\t')
+            );
         }
     }
 }

@@ -1,0 +1,15 @@
+edition = "2024"
+newline_style = "Unix"
+unstable_features = true
+
+max_width = 100
+comment_width = 100
+
+group_imports = "StdExternalCrate"
+imports_granularity = "Crate"
+
+wrap_comments = true
+format_code_in_doc_comments = true
+normalize_comments = true
+
+trailing_semicolon = true

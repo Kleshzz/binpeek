@@ -1,18 +1,20 @@
-use crate::app::{App, Progress, TAB_NAMES};
+use std::thread::JoinHandle;
+
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
+    Terminal,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph, Tabs},
-    Terminal,
 };
-use std::thread::JoinHandle;
+
+use crate::app::{App, Progress, TAB_NAMES};
 
 struct TerminalGuard;
 impl Drop for TerminalGuard {

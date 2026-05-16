@@ -205,8 +205,9 @@ fn detect_by_magic(data: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::path::Path;
+
+    use super::*;
 
     fn detect(data: &[u8], name: &str) -> String {
         detect_with_path(data, Path::new(name))
