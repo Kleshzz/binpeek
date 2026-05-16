@@ -30,6 +30,31 @@ fn main() {
         std::process::exit(1);
     }
 
+    let metadata = match std::fs::metadata(&cli.file) {
+        Ok(m) => m,
+        Err(e) => {
+            eprintln!(
+                "Error: could not get metadata for '{}': {}",
+                cli.file.display(),
+                e
+            );
+            std::process::exit(1);
+        }
+    };
+
+    let size = metadata.len();
+    if size == 0 {
+        eprintln!("Error: file '{}' is empty", cli.file.display());
+        std::process::exit(1);
+    }
+
+    if size > 100 * 1024 * 1024 {
+        eprintln!(
+            "Warning: large file ({:.0} MB), analysis may be slow",
+            size as f64 / 1_048_576.0
+        );
+    }
+
     let data = match std::fs::read(&cli.file) {
         Ok(d) => d,
         Err(e) => {
@@ -37,18 +62,6 @@ fn main() {
             std::process::exit(1);
         }
     };
-
-    if data.is_empty() {
-        eprintln!("Error: file '{}' is empty", cli.file.display());
-        std::process::exit(1);
-    }
-
-    if data.len() > 100 * 1024 * 1024 {
-        eprintln!(
-            "Warning: large file ({:.0} MB), analysis may be slow",
-            data.len() as f64 / 1_048_576.0
-        );
-    }
 
     let data_arc = Arc::new(data);
     let progress = app::LoadProgress::new();

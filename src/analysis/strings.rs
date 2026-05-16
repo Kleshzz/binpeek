@@ -14,7 +14,6 @@ pub fn extract(data: &[u8], min_len: usize) -> Vec<String> {
             if current.len() >= min_len {
                 results.push(String::from_utf8(std::mem::take(&mut current)).unwrap());
             }
-            current.clear();
         }
     }
     if current.len() >= min_len {
