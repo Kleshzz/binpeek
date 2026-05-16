@@ -14,7 +14,8 @@ Thumbs.db
 desktop.ini
 
 # Website will be moved to another repo
-/docs
+*.html
+*.css
 
 # Other
 *.zip
