@@ -176,4 +176,4 @@ jobs:
           ref: ${{ needs.version-bump.outputs.sha }}
       - uses: dtolnay/rust-toolchain@stable
       - name: Publish
-        run: cargo publish --token ${{ secrets.CARGO_TOKEN }}
+        run: cargo publish --allow-dirty --token ${{ secrets.CARGO_TOKEN }}
