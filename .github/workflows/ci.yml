@@ -1,20 +1,21 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: ["**"]
     paths:
       - "src/**"
       - "Cargo.toml"
       - "Cargo.lock"
-      - ".github/workflows/**"
+      - ".github/workflows/ci.yml"
   pull_request:
     branches: ["**"]
     paths:
       - "src/**"
       - "Cargo.toml"
       - "Cargo.lock"
-      - ".github/workflows/**"
+      - ".github/workflows/ci.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,40 +25,46 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
   CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_TEST_DEBUG: 0
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
 
 jobs:
   lint:
     name: Lint (fmt + clippy)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install Rust (stable + components)
+      - name: Install Rust (stable)
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt, clippy
+          components: clippy
 
-      - name: Cache cargo registry + target
-        uses: actions/cache@v5
+      - name: Install Rust (nightly)
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: lint-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-          restore-keys: lint-${{ runner.os }}-
+          components: rustfmt
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          shared-key: "stable"
+          cache-on-failure: true
 
       - name: Install native deps (capstone)
         run: sudo apt-get update && sudo apt-get install -y libclang-dev
 
-      - run: cargo fmt --all --check
-      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo +nightly fmt --all --check
+      - run: cargo +stable clippy --all-targets -- -D warnings
 
   build:
     name: Build (${{ matrix.os }})
     needs: lint
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -68,18 +75,14 @@ jobs:
       - name: Install Rust (stable)
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache cargo registry + target
-        uses: actions/cache@v5
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: build-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-          restore-keys: build-${{ runner.os }}-
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          shared-key: "stable-${{ runner.os }}"
+          cache-on-failure: true
 
-      - name: Install native deps (capstone) — Linux
+      - name: Install native deps
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libclang-dev
 
@@ -92,6 +95,7 @@ jobs:
   msrv:
     name: MSRV (rust-version in Cargo.toml)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
 
@@ -100,18 +104,14 @@ jobs:
         with:
           toolchain: "1.88.0"
 
-      - name: Cache cargo
-        uses: actions/cache@v5
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: msrv-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-          restore-keys: msrv-${{ runner.os }}-
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          shared-key: "msrv"
+          cache-on-failure: true
 
-      - name: Install native deps (capstone)
+      - name: Install native deps
         run: sudo apt-get update && sudo apt-get install -y libclang-dev
 
       - run: cargo build
