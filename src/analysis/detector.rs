@@ -202,3 +202,81 @@ fn detect_by_magic(data: &[u8]) -> String {
         _ => "Unknown".to_string(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    fn detect(data: &[u8], name: &str) -> String {
+        detect_with_path(data, Path::new(name))
+    }
+
+    #[test]
+    fn elf_magic() {
+        let mut d = vec![0x7F, 0x45, 0x4C, 0x46];
+        d.extend_from_slice(&[0u8; 60]);
+        assert_eq!(detect(&d, "binary"), "ELF (Linux/Unix)");
+    }
+
+    #[test]
+    fn pe_exe() {
+        let mut d = vec![0x4D, 0x5A];
+        d.extend_from_slice(&[0u8; 60]);
+        assert_eq!(detect(&d, "prog.exe"), "PE (Windows Executable)");
+    }
+
+    #[test]
+    fn pe_dll_by_extension() {
+        let mut d = vec![0x4D, 0x5A];
+        d.extend_from_slice(&[0u8; 60]);
+        assert_eq!(detect(&d, "lib.dll"), "PE — DLL (Dynamic Library)");
+    }
+
+    #[test]
+    fn zip_by_magic() {
+        let d = vec![0x50, 0x4B, 0x03, 0x04, 0u8, 0u8];
+        assert_eq!(detect(&d, "archive.zip"), "ZIP Archive");
+    }
+
+    #[test]
+    fn jar_by_extension() {
+        let d = vec![0x50, 0x4B, 0x03, 0x04, 0u8, 0u8];
+        assert_eq!(detect(&d, "app.jar"), "JAR (Java Archive)");
+    }
+
+    #[test]
+    fn pdf_magic() {
+        let d = b"%PDF-1.4 fake";
+        assert_eq!(detect(d, "doc.pdf"), "PDF Document");
+    }
+
+    #[test]
+    fn sqlite_magic() {
+        let d = b"SQLite format 3\x00";
+        assert_eq!(detect(d, "db.sqlite"), "SQLite Database");
+    }
+
+    #[test]
+    fn png_magic() {
+        let d = vec![0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+        assert_eq!(detect(&d, "img.png"), "PNG Image");
+    }
+
+    #[test]
+    fn too_small_is_unknown() {
+        assert!(detect(&[0x4D], "x").contains("Unknown"));
+    }
+
+    #[test]
+    fn unknown_ext_fallback() {
+        // no extension -> Unknown
+        let d = vec![0xDE, 0xAD, 0xBE, 0xEF];
+        assert_eq!(detect(&d, "noextension"), "Unknown");
+
+        // extension fallback when magic unknown
+        let empty_magic = vec![0x00u8; 10];
+        assert_eq!(detect(&empty_magic, "script.py"), "Python Script");
+        assert_eq!(detect(&empty_magic, "config.toml"), "TOML");
+    }
+}

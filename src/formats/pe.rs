@@ -76,3 +76,19 @@ pub fn pe_text_section(data: &[u8]) -> Option<(Vec<u8>, u64, bool)> {
         Err(_) => None,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn garbage_data_does_not_panic() {
+        let r = pe_parse_all(b"MZ garbage data that is not a valid PE");
+        assert!(!r.0.is_empty());
+    }
+
+    #[test]
+    fn text_section_on_garbage_returns_none() {
+        assert!(pe_text_section(b"MZ garbage").is_none());
+    }
+}

@@ -269,3 +269,73 @@ fn detect_language(text: &str) -> &'static str {
 
     "Unknown / C"
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn lang(snippet: &[u8]) -> &'static str {
+        detect(snippet).language
+    }
+
+    fn packer(snippet: &[u8]) -> Option<&'static str> {
+        detect(snippet).packer
+    }
+
+    fn obf(snippet: &[u8]) -> Option<&'static str> {
+        detect(snippet).obfuscator
+    }
+
+    #[test]
+    fn detects_go() {
+        assert_eq!(lang(b"Go build ID: abc123"), "Go");
+        assert_eq!(lang(b"goroutine 1 [running]"), "Go");
+    }
+
+    #[test]
+    fn detects_rust() {
+        assert_eq!(lang(b"rustc 1.75.0 core::panicking"), "Rust");
+        assert_eq!(lang(b"rust_begin_unwind panic"), "Rust");
+    }
+
+    #[test]
+    fn detects_dotnet() {
+        assert_eq!(lang(b"_CorExeMain mscoree.dll"), ".NET / C#");
+    }
+
+    #[test]
+    fn detects_python() {
+        assert_eq!(lang(b"PyInstaller bundle"), "Python");
+    }
+
+    #[test]
+    fn detects_upx() {
+        assert_eq!(packer(b"UPX0\x00UPX1\x00UPX!"), Some("UPX"));
+    }
+
+    #[test]
+    fn detects_vmprotect() {
+        assert_eq!(packer(b"VMProtect section data"), Some("VMProtect"));
+    }
+
+    #[test]
+    fn detects_confuserex() {
+        assert_eq!(obf(b"ConfuserEx v1.0 protected"), Some("ConfuserEx (.NET)"));
+    }
+
+    #[test]
+    fn unknown_is_fallback() {
+        assert_eq!(lang(b"\x00\x01\x02\x03"), "Unknown / C");
+        assert_eq!(packer(b"\x00\x01\x02\x03"), None);
+        assert_eq!(obf(b"\x00\x01\x02\x03"), None);
+    }
+
+    #[test]
+    fn java_class_magic() {
+        // CAFEBABE with nfat > 10 -> Java
+        let mut d = vec![0xCA, 0xFE, 0xBA, 0xBE];
+        // nfat = 0xCAFE (>10) as big-endian u32
+        d.extend_from_slice(&[0x00, 0x00, 0x00, 0x34]);
+        assert_eq!(lang(&d), "Java");
+    }
+}

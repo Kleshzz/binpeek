@@ -67,3 +67,19 @@ pub fn elf_text_section(data: &[u8]) -> Option<(Vec<u8>, u64, bool)> {
         Err(_) => None,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn garbage_data_does_not_panic() {
+        let r = elf_parse_all(b"\x7FELF garbage not a real elf binary here");
+        assert!(!r.0.is_empty());
+    }
+
+    #[test]
+    fn text_section_on_garbage_returns_none() {
+        assert!(elf_text_section(b"\x7FELF garbage").is_none());
+    }
+}
