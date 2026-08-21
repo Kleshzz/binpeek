@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 pub fn extract(data: &[u8], min_len: usize) -> Vec<String> {
     let data = if data.len() > 100_000_000 {
         &data[..100_000_000]
@@ -13,6 +15,8 @@ pub fn extract(data: &[u8], min_len: usize) -> Vec<String> {
         } else {
             if current.len() >= min_len {
                 results.push(String::from_utf8(std::mem::take(&mut current)).unwrap());
+            } else {
+                current.clear();
             }
         }
     }
@@ -20,7 +24,8 @@ pub fn extract(data: &[u8], min_len: usize) -> Vec<String> {
         results.push(String::from_utf8(current).unwrap());
     }
 
-    results.dedup();
+    let mut seen = HashSet::new();
+    results.retain(|s| seen.insert(s.clone()));
     results.truncate(10_000);
     results
 }
@@ -70,5 +75,12 @@ mod tests {
                     .all(|c| c.is_ascii_graphic() || c == ' ' || c == '\t')
             );
         }
+    }
+
+    #[test]
+    fn removes_non_adjacent_duplicates() {
+        let data = b"hello\x00world\x00hello";
+        let r = extract(data, 5);
+        assert_eq!(r, vec!["hello", "world"]);
     }
 }

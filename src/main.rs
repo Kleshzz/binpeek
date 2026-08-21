@@ -42,13 +42,26 @@ fn main() {
         }
     };
 
+    const WARN_SIZE: u64 = 100 * 1024 * 1024; // 100 MB
+    const MAX_SIZE: u64 = 1024 * 1024 * 1024; // 1 GB
+
     let size = metadata.len();
     if size == 0 {
         eprintln!("Error: file '{}' is empty", cli.file.display());
         std::process::exit(1);
     }
 
-    if size > 100 * 1024 * 1024 {
+    if size > MAX_SIZE {
+        eprintln!(
+            "Error: file '{}' is {:.0} MB, exceeds the {} MB limit binpeek supports",
+            cli.file.display(),
+            size as f64 / 1_048_576.0,
+            MAX_SIZE / 1_048_576
+        );
+        std::process::exit(1);
+    }
+
+    if size > WARN_SIZE {
         eprintln!(
             "Warning: large file ({:.0} MB), analysis may be slow",
             size as f64 / 1_048_576.0

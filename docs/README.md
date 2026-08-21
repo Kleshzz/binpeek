@@ -25,19 +25,19 @@ Supports **PE** (Windows `.exe` / `.dll`), **ELF** (Linux), **Mach-O** (macOS) a
 
 Most hex editors just show you bytes. **binpeek** tells you what they actually *are*:
 
-- **Instant Identification** — Detects 20+ languages (Go, Rust, Swift, Zig, etc.) and deep framework info.
-- **Packer Detection** — Automatically identifies UPX, Themida, VMProtect and 15+ other packers/obfuscators.
-- **Visual Entropy** — See at a glance if parts of the file are compressed or encrypted.
-- **Zero Bloat** — Single binary. No Python, no JVM, no external dependencies.
+- **Instant Identification** - Detects 20+ languages (Go, Rust, Swift, Zig, etc.) and deep framework info.
+- **Packer Detection** - Automatically identifies UPX, Themida, VMProtect and 15+ other packers/obfuscators.
+- **Visual Entropy** - See at a glance if parts of the file are compressed or encrypted.
+- **Zero Bloat** - Single binary. No Python, no JVM, no external dependencies.
 
 ## Features
 
-- **Overview** — file size, format detection, entropy, language, packer and obfuscator detection
-- **Sections** — virtual addresses, sizes, entry point, image base
-- **Imports** — imported DLLs and functions (PE) / libraries and symbols (ELF)
-- **Strings** — extracted printable ASCII strings (min. 5 chars, up to 10 000)
-- **Disasm** — disassembly of the `.text` section via Capstone (x86/x64)
-- Fast and lightweight — single binary, no runtime dependencies
+- **Overview** - file size, format detection, entropy, language, packer and obfuscator detection
+- **Sections** - virtual addresses, sizes, entry point, image base
+- **Imports** - imported DLLs and functions (PE) / libraries and symbols (ELF)
+- **Strings** - extracted printable ASCII strings (min. 5 chars, up to 10 000)
+- **Disasm** - disassembly of the `.text` section via Capstone (x86/x64)
+- Fast and lightweight - single binary, no runtime dependencies
 
 ## Installation
 
@@ -89,7 +89,7 @@ binpeek C:\Windows\System32\kernel32.dll
 # Inspect a Linux binary
 binpeek /usr/bin/ls
 
-# Inspect any file — images, archives, documents
+# Inspect any file, e.g. images, archives, documents
 binpeek suspicious.pdf
 binpeek archive.zip
 ```
@@ -171,11 +171,11 @@ Check out [CONTRIBUTING.md](./CONTRIBUTING.md) to get started!
 
 `binpeek` wouldn't be possible without these amazing crates:
 
-- [ratatui](https://github.com/ratatui/ratatui) — terminal user interface
-- [capstone-rs](https://github.com/capstone-rust/capstone-rs) — disassembly engine
-- [goblin](https://github.com/m4b/goblin) — binary format parsing
-- [crossterm](https://github.com/crossterm-rs/crossterm) — cross-platform terminal manipulation
-- [clap](https://github.com/clap-rs/clap) — command line argument parsing
+- [ratatui](https://github.com/ratatui/ratatui) - terminal user interface
+- [capstone-rs](https://github.com/capstone-rust/capstone-rs) - disassembly engine
+- [goblin](https://github.com/m4b/goblin) - binary format parsing
+- [crossterm](https://github.com/crossterm-rs/crossterm) - cross-platform terminal manipulation
+- [clap](https://github.com/clap-rs/clap) - command line argument parsing
 
 ## License
 

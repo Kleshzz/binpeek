@@ -1,6 +1,6 @@
 # Contributing to binpeek 🔍
 
-First of all, thank you for considering contributing to `binpeek`! Any help—whether it's reporting bugs, suggesting features, or adding new file signatures—is greatly appreciated.
+First of all, thank you for considering contributing to `binpeek`! Any help, whether it's reporting bugs, suggesting features, or adding new file signatures, is greatly appreciated.
 
 ## How to add a new signature?
 

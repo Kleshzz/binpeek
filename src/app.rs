@@ -102,7 +102,7 @@ impl App {
                 };
 
                 let disasm = match text {
-                    Some((bytes, addr, is_64)) => disasm::disassemble(&bytes, is_64, addr),
+                    Some((bytes, addr, arch)) => disasm::disassemble(&bytes, arch, addr),
                     None => vec!["  .text section not found or format not supported".to_string()],
                 };
 
@@ -122,21 +122,27 @@ impl App {
             r
         });
 
-        {
-            let mut p = progress.lock().unwrap();
-            p.current = "Calculating entropy...";
-        }
-        let ent = entropy::calculate(&data_arc);
+        let (d3, p3) = (data_arc.clone(), progress.clone());
+        let t_meta = std::thread::spawn(move || {
+            {
+                let mut p = p3.lock().unwrap();
+                p.current = "Calculating entropy...";
+            }
+            let ent = entropy::calculate(&d3);
+            let lang_info = lang::detect(&d3);
+            {
+                let mut p = p3.lock().unwrap();
+                p.steps_done += 1;
+            }
+            (ent, lang_info)
+        });
+
         let format = detector::detect_with_path(&data_arc, path);
-        let lang_info = lang::detect(&data_arc);
-        let overview = build_overview(&file_name, data_arc.len(), ent, &format, &lang_info);
-        {
-            let mut p = progress.lock().unwrap();
-            p.steps_done += 1;
-        }
 
         let strings = t_strings.join().unwrap();
         let (sections, imports, disasm) = t_analysis.join().unwrap();
+        let (ent, lang_info) = t_meta.join().unwrap();
+        let overview = build_overview(&file_name, data_arc.len(), ent, &format, &lang_info);
         {
             let mut p = progress.lock().unwrap();
             p.steps_done = p.total;

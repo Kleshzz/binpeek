@@ -3,7 +3,7 @@ use std::thread::JoinHandle;
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{EnterAlternateScreen, enable_raw_mode},
 };
 use ratatui::{
     Terminal,
@@ -44,9 +44,8 @@ pub fn run_loading(progress: &Progress, handle: JoinHandle<crate::app::App>) {
 
     loop {
         if let Ok(app) = rx.try_recv() {
-            drop(_guard);
-            run(app);
-            return;
+            run(app, &mut terminal);
+            return; // _guard drops here, raw mode disabled/alt screen left exactly once
         }
 
         let pct = crate::app::LoadProgress::percent(progress);
@@ -144,17 +143,9 @@ pub fn run_loading(progress: &Progress, handle: JoinHandle<crate::app::App>) {
     }
 }
 
-pub fn run(mut app: App) {
-    enable_raw_mode().unwrap();
-    let _guard = TerminalGuard;
-    let mut stdout = std::io::stdout();
-    execute!(stdout, EnterAlternateScreen).unwrap();
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend).unwrap();
-
+pub fn run(mut app: App, terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>) {
     loop {
         app.clamp_scroll();
-
         terminal
             .draw(|f| {
                 let size = f.area();
@@ -251,7 +242,4 @@ pub fn run(mut app: App) {
             }
         }
     }
-
-    disable_raw_mode().unwrap();
-    execute!(terminal.backend_mut(), LeaveAlternateScreen).unwrap();
 }

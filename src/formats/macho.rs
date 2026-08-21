@@ -1,6 +1,24 @@
-use goblin::mach::Mach;
+use goblin::mach::{Mach, cputype};
 
-pub fn macho_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>, Option<(Vec<u8>, u64, bool)>) {
+use crate::{
+    analysis::disasm::Arch,
+    formats::{
+        ParseResult,
+        util::{checked_slice, is_new_best},
+    },
+};
+
+fn macho_arch(cputype: u32) -> Arch {
+    match cputype {
+        cputype::CPU_TYPE_X86_64 => Arch::X86_64,
+        cputype::CPU_TYPE_X86 => Arch::X86,
+        cputype::CPU_TYPE_ARM64 => Arch::Arm64,
+        cputype::CPU_TYPE_ARM => Arch::Arm,
+        _ => Arch::Unknown,
+    }
+}
+
+pub fn macho_parse_all(data: &[u8]) -> ParseResult {
     match Mach::parse(data) {
         Ok(Mach::Binary(macho)) => {
             let mut sections = vec![
@@ -17,7 +35,7 @@ pub fn macho_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>, Option<(Vec<u8
 
             for segment in &macho.segments {
                 for (section, _) in &segment.sections().unwrap_or_default() {
-                    let name = section.name().unwrap_or("?");
+                    let name = section.name().unwrap_or("<unreadable name>");
                     sections.push(format!(
                         "  {:20}  0x{:08X}    {:>10} bytes",
                         name, section.offset, section.size
@@ -49,24 +67,32 @@ pub fn macho_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>, Option<(Vec<u8
                 }
             }
 
-            let mut text_section = None;
+            let mut text_section: Option<(Vec<u8>, u64, Arch)> = None;
+            let mut text_matches = 0usize;
             for segment in &macho.segments {
                 for (section, _) in &segment.sections().unwrap_or_default() {
                     if let Ok(name) = section.name()
                         && name == "__text"
                     {
+                        text_matches += 1;
                         let offset = section.offset as usize;
                         let size = section.size as usize;
-                        if offset + size <= data.len() {
-                            let bytes = data[offset..offset + size].to_vec();
-                            text_section = Some((bytes, section.addr, macho.is_64));
-                            break;
+                        if let Some(bytes) = checked_slice(data, offset, size) {
+                            let current_best = text_section.as_ref().map(|(b, _, _)| b.len());
+                            if is_new_best(current_best, bytes.len()) {
+                                let arch = macho_arch(macho.header.cputype);
+                                text_section = Some((bytes, section.addr, arch));
+                            }
                         }
                     }
                 }
-                if text_section.is_some() {
-                    break;
-                }
+            }
+            if text_matches > 1 {
+                sections.push(String::new());
+                sections.push(format!(
+                    "  Note: {} sections named \"__text\" found; using the largest",
+                    text_matches
+                ));
             }
 
             (sections, imports, text_section)
@@ -74,7 +100,7 @@ pub fn macho_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>, Option<(Vec<u8
         Ok(Mach::Fat(fat)) => {
             let arches = fat.arches().unwrap_or_default();
             let mut sections = vec![
-                format!("  Format       : Mach-O Fat Binary"),
+                "  Format       : Mach-O Fat Binary".to_string(),
                 format!("  Arches count : {}", arches.len()),
                 String::new(),
             ];
@@ -97,5 +123,29 @@ pub fn macho_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>, Option<(Vec<u8
             vec![format!("  Parse error: {}", e)],
             None,
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn garbage_data_does_not_panic() {
+        let r = macho_parse_all(b"garbage not a real macho binary");
+        assert!(!r.0.is_empty());
+    }
+
+    #[test]
+    fn arch_mapping_known_types() {
+        assert_eq!(macho_arch(cputype::CPU_TYPE_X86_64), Arch::X86_64);
+        assert_eq!(macho_arch(cputype::CPU_TYPE_X86), Arch::X86);
+        assert_eq!(macho_arch(cputype::CPU_TYPE_ARM64), Arch::Arm64);
+        assert_eq!(macho_arch(cputype::CPU_TYPE_ARM), Arch::Arm);
+    }
+
+    #[test]
+    fn arch_mapping_unknown_type_is_unknown() {
+        assert_eq!(macho_arch(0xDEAD), Arch::Unknown);
     }
 }

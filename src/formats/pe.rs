@@ -1,6 +1,24 @@
-use goblin::pe::PE;
+use goblin::pe::{PE, header};
 
-pub fn pe_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>, Option<(Vec<u8>, u64, bool)>) {
+use crate::{
+    analysis::disasm::Arch,
+    formats::{
+        ParseResult,
+        util::{checked_slice, is_new_best},
+    },
+};
+
+fn pe_arch(machine: u16) -> Arch {
+    match machine {
+        header::COFF_MACHINE_X86_64 => Arch::X86_64,
+        header::COFF_MACHINE_X86 => Arch::X86,
+        header::COFF_MACHINE_ARM64 => Arch::Arm64,
+        header::COFF_MACHINE_ARM | header::COFF_MACHINE_ARMNT => Arch::Arm,
+        _ => Arch::Unknown,
+    }
+}
+
+pub fn pe_parse_all(data: &[u8]) -> ParseResult {
     match PE::parse(data) {
         Ok(pe) => {
             let mut sections = vec![
@@ -14,7 +32,7 @@ pub fn pe_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>, Option<(Vec<u8>, 
             ];
             for s in &pe.sections {
                 let name = std::str::from_utf8(&s.name)
-                    .unwrap_or("?")
+                    .unwrap_or("<invalid utf8>")
                     .trim_matches('\0')
                     .to_string();
                 sections.push(format!(
@@ -36,21 +54,32 @@ pub fn pe_parse_all(data: &[u8]) -> (Vec<String>, Vec<String>, Option<(Vec<u8>, 
                 imports.push(format!("    {}", import.name));
             }
 
-            let mut text_section = None;
+            let mut text_section: Option<(Vec<u8>, u64, Arch)> = None;
+            let mut text_matches = 0usize;
             for section in &pe.sections {
                 let name = std::str::from_utf8(&section.name)
                     .unwrap_or("")
                     .trim_matches('\0');
                 if name == ".text" {
+                    text_matches += 1;
                     let offset = section.pointer_to_raw_data as usize;
                     let size = section.size_of_raw_data as usize;
-                    if offset + size <= data.len() {
-                        let bytes = data[offset..offset + size].to_vec();
-                        let va = pe.image_base + section.virtual_address as u64;
-                        text_section = Some((bytes, va, pe.is_64));
-                        break;
+                    if let Some(bytes) = checked_slice(data, offset, size) {
+                        let current_best = text_section.as_ref().map(|(b, _, _)| b.len());
+                        if is_new_best(current_best, bytes.len()) {
+                            let va = pe.image_base + section.virtual_address as u64;
+                            let arch = pe_arch(pe.header.coff_header.machine);
+                            text_section = Some((bytes, va, arch));
+                        }
                     }
                 }
+            }
+            if text_matches > 1 {
+                sections.push(String::new());
+                sections.push(format!(
+                    "  Note: {} sections named \".text\" found; using the largest",
+                    text_matches
+                ));
             }
 
             (sections, imports, text_section)
@@ -84,6 +113,21 @@ mod tests {
 
     #[test]
     fn text_section_on_garbage_returns_none() {
-        assert!(pe_text_section(b"MZ garbage").is_none());
+        let r = pe_parse_all(b"MZ garbage");
+        assert!(r.2.is_none());
+    }
+
+    #[test]
+    fn arch_mapping_known_machines() {
+        assert_eq!(pe_arch(header::COFF_MACHINE_X86_64), Arch::X86_64);
+        assert_eq!(pe_arch(header::COFF_MACHINE_X86), Arch::X86);
+        assert_eq!(pe_arch(header::COFF_MACHINE_ARM64), Arch::Arm64);
+        assert_eq!(pe_arch(header::COFF_MACHINE_ARM), Arch::Arm);
+        assert_eq!(pe_arch(header::COFF_MACHINE_ARMNT), Arch::Arm);
+    }
+
+    #[test]
+    fn arch_mapping_unknown_machine_is_unknown() {
+        assert_eq!(pe_arch(0xDEAD), Arch::Unknown);
     }
 }
