@@ -14,6 +14,9 @@ fn pe_arch(machine: u16) -> Arch {
         header::COFF_MACHINE_X86 => Arch::X86,
         header::COFF_MACHINE_ARM64 => Arch::Arm64,
         header::COFF_MACHINE_ARM | header::COFF_MACHINE_ARMNT => Arch::Arm,
+        header::COFF_MACHINE_RISCV32 => Arch::RiscV32,
+        header::COFF_MACHINE_RISCV64 => Arch::RiscV64,
+        header::COFF_MACHINE_POWERPC | header::COFF_MACHINE_POWERPCFP => Arch::Ppc32,
         _ => Arch::Unknown,
     }
 }
@@ -64,13 +67,13 @@ pub fn pe_parse_all(data: &[u8]) -> ParseResult {
                     text_matches += 1;
                     let offset = section.pointer_to_raw_data as usize;
                     let size = section.size_of_raw_data as usize;
-                    if let Some(bytes) = checked_slice(data, offset, size) {
-                        let current_best = text_section.as_ref().map(|(b, _, _)| b.len());
-                        if is_new_best(current_best, bytes.len()) {
-                            let va = pe.image_base + section.virtual_address as u64;
-                            let arch = pe_arch(pe.header.coff_header.machine);
-                            text_section = Some((bytes, va, arch));
-                        }
+                    let current_best = text_section.as_ref().map(|(b, _, _)| b.len());
+                    if is_new_best(current_best, size)
+                        && let Some(bytes) = checked_slice(data, offset, size)
+                    {
+                        let va = pe.image_base.saturating_add(section.virtual_address as u64);
+                        let arch = pe_arch(pe.header.coff_header.machine);
+                        text_section = Some((bytes, va, arch));
                     }
                 }
             }
@@ -124,6 +127,10 @@ mod tests {
         assert_eq!(pe_arch(header::COFF_MACHINE_ARM64), Arch::Arm64);
         assert_eq!(pe_arch(header::COFF_MACHINE_ARM), Arch::Arm);
         assert_eq!(pe_arch(header::COFF_MACHINE_ARMNT), Arch::Arm);
+        assert_eq!(pe_arch(header::COFF_MACHINE_RISCV32), Arch::RiscV32);
+        assert_eq!(pe_arch(header::COFF_MACHINE_RISCV64), Arch::RiscV64);
+        assert_eq!(pe_arch(header::COFF_MACHINE_POWERPC), Arch::Ppc32);
+        assert_eq!(pe_arch(header::COFF_MACHINE_POWERPCFP), Arch::Ppc32);
     }
 
     #[test]

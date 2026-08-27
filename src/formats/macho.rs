@@ -14,6 +14,8 @@ fn macho_arch(cputype: u32) -> Arch {
         cputype::CPU_TYPE_X86 => Arch::X86,
         cputype::CPU_TYPE_ARM64 => Arch::Arm64,
         cputype::CPU_TYPE_ARM => Arch::Arm,
+        cputype::CPU_TYPE_POWERPC => Arch::Ppc32,
+        cputype::CPU_TYPE_POWERPC64 => Arch::Ppc64,
         _ => Arch::Unknown,
     }
 }
@@ -77,12 +79,12 @@ pub fn macho_parse_all(data: &[u8]) -> ParseResult {
                         text_matches += 1;
                         let offset = section.offset as usize;
                         let size = section.size as usize;
-                        if let Some(bytes) = checked_slice(data, offset, size) {
-                            let current_best = text_section.as_ref().map(|(b, _, _)| b.len());
-                            if is_new_best(current_best, bytes.len()) {
-                                let arch = macho_arch(macho.header.cputype);
-                                text_section = Some((bytes, section.addr, arch));
-                            }
+                        let current_best = text_section.as_ref().map(|(b, _, _)| b.len());
+                        if is_new_best(current_best, size)
+                            && let Some(bytes) = checked_slice(data, offset, size)
+                        {
+                            let arch = macho_arch(macho.header.cputype);
+                            text_section = Some((bytes, section.addr, arch));
                         }
                     }
                 }
@@ -142,6 +144,8 @@ mod tests {
         assert_eq!(macho_arch(cputype::CPU_TYPE_X86), Arch::X86);
         assert_eq!(macho_arch(cputype::CPU_TYPE_ARM64), Arch::Arm64);
         assert_eq!(macho_arch(cputype::CPU_TYPE_ARM), Arch::Arm);
+        assert_eq!(macho_arch(cputype::CPU_TYPE_POWERPC), Arch::Ppc32);
+        assert_eq!(macho_arch(cputype::CPU_TYPE_POWERPC64), Arch::Ppc64);
     }
 
     #[test]

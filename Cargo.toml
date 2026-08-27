@@ -23,5 +23,13 @@ opt-level = 3
 lto = true
 strip = true
 codegen-units = 1
-panic = "abort"
 overflow-checks = false
+
+[profile.test]
+opt-level = 0
+debug = 0
+incremental = true
+codegen-units = 256
+
+[profile.test.package."*"]
+opt-level = 2

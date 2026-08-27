@@ -21,6 +21,15 @@ fn elf_arch(machine: u16, is_64: bool) -> Arch {
                 Arch::Mips
             }
         }
+        header::EM_RISCV => {
+            if is_64 {
+                Arch::RiscV64
+            } else {
+                Arch::RiscV32
+            }
+        }
+        header::EM_PPC => Arch::Ppc32,
+        header::EM_PPC64 => Arch::Ppc64,
         _ => Arch::Unknown,
     }
 }
@@ -75,12 +84,12 @@ pub fn elf_parse_all(data: &[u8]) -> ParseResult {
                     text_matches += 1;
                     let offset = section.sh_offset as usize;
                     let size = section.sh_size as usize;
-                    if let Some(bytes) = checked_slice(data, offset, size) {
-                        let current_best = text_section.as_ref().map(|(b, _, _)| b.len());
-                        if is_new_best(current_best, bytes.len()) {
-                            let arch = elf_arch(elf.header.e_machine, elf.is_64);
-                            text_section = Some((bytes, section.sh_addr, arch));
-                        }
+                    let current_best = text_section.as_ref().map(|(b, _, _)| b.len());
+                    if is_new_best(current_best, size)
+                        && let Some(bytes) = checked_slice(data, offset, size)
+                    {
+                        let arch = elf_arch(elf.header.e_machine, elf.is_64);
+                        text_section = Some((bytes, section.sh_addr, arch));
                     }
                 }
             }
@@ -126,6 +135,10 @@ mod tests {
         assert_eq!(elf_arch(header::EM_ARM, false), Arch::Arm);
         assert_eq!(elf_arch(header::EM_MIPS, false), Arch::Mips);
         assert_eq!(elf_arch(header::EM_MIPS, true), Arch::Mips64);
+        assert_eq!(elf_arch(header::EM_RISCV, true), Arch::RiscV64);
+        assert_eq!(elf_arch(header::EM_RISCV, false), Arch::RiscV32);
+        assert_eq!(elf_arch(header::EM_PPC, false), Arch::Ppc32);
+        assert_eq!(elf_arch(header::EM_PPC64, true), Arch::Ppc64);
     }
 
     #[test]

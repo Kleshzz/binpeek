@@ -8,6 +8,10 @@ pub enum Arch {
     Arm64,
     Mips,
     Mips64,
+    RiscV32,
+    RiscV64,
+    Ppc32,
+    Ppc64,
     Unknown,
 }
 
@@ -20,6 +24,10 @@ impl Arch {
             Arch::Arm64 => "ARM64",
             Arch::Mips => "MIPS",
             Arch::Mips64 => "MIPS64",
+            Arch::RiscV32 => "RISC-V32",
+            Arch::RiscV64 => "RISC-V64",
+            Arch::Ppc32 => "PowerPC32",
+            Arch::Ppc64 => "PowerPC64",
             Arch::Unknown => "Unknown",
         }
     }
@@ -57,6 +65,28 @@ pub fn disassemble(data: &[u8], arch: Arch, base_addr: u64) -> Vec<String> {
         Arch::Mips64 => Capstone::new()
             .mips()
             .mode(arch::mips::ArchMode::Mips64)
+            .detail(false)
+            .build(),
+        Arch::RiscV32 => Capstone::new()
+            .riscv()
+            .mode(arch::riscv::ArchMode::RiscV32)
+            .detail(false)
+            .build(),
+        Arch::RiscV64 => Capstone::new()
+            .riscv()
+            .mode(arch::riscv::ArchMode::RiscV64)
+            .detail(false)
+            .build(),
+        Arch::Ppc32 => Capstone::new()
+            .ppc()
+            .mode(arch::ppc::ArchMode::Mode32)
+            .endian(capstone::Endian::Big)
+            .detail(false)
+            .build(),
+        Arch::Ppc64 => Capstone::new()
+            .ppc()
+            .mode(arch::ppc::ArchMode::Mode64)
+            .endian(capstone::Endian::Big)
             .detail(false)
             .build(),
         Arch::Unknown => {

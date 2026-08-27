@@ -34,9 +34,14 @@ pub fn run_loading(progress: &Progress, handle: JoinHandle<crate::app::App>) {
 
     use std::sync::mpsc;
     let (tx, rx) = mpsc::channel();
-    let _handle = std::thread::spawn(move || {
-        let result = handle.join().unwrap();
-        tx.send(result).unwrap();
+    let _handle = std::thread::spawn(move || match handle.join() {
+        Ok(result) => {
+            let _ = tx.send(result);
+        }
+        Err(_) => {
+            eprintln!("binpeek: internal error while analyzing the file");
+            std::process::exit(1);
+        }
     });
 
     let spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
